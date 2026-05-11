@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { testDbConnection } from './db/index.js';
 import { requireAuth, type AuthenticatedRequest } from './middleware/auth.js';
+import goalsRouter from './routes/goalsRoutes.js';
 import statsRouter from './routes/statsRoutes.js';
 import measurementsRouter from './routes/measurementsRoutes.js';
 
@@ -23,6 +24,7 @@ app.get('/api/me', requireAuth, (req: AuthenticatedRequest, res) => {
 
 app.use('/api', measurementsRouter);
 app.use('/api', statsRouter);
+app.use('/api', goalsRouter);
 
 app.listen(port, async () => {
   console.log(`WellSync backend listening on port ${port}`);
