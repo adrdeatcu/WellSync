@@ -1,0 +1,32 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import { testDbConnection } from './db/index.js';
+import { requireAuth, type AuthenticatedRequest } from './middleware/auth.js';
+import measurementsRouter from './routes/measurementsRoutes.js';
+
+const app = express();
+const port = process.env.PORT || 4000;
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// Example protected route to test auth
+app.get('/api/me', requireAuth, (req: AuthenticatedRequest, res) => {
+  res.json({ userId: req.userId });
+});
+
+app.use('/api', measurementsRouter);
+
+app.listen(port, async () => {
+  console.log(`WellSync backend listening on port ${port}`);
+  try {
+    await testDbConnection();
+  } catch (err) {
+    console.error('Supabase admin connection failed:', err);
+  }
+});
