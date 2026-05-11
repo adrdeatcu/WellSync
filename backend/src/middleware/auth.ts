@@ -1,18 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
-import jwt, { JwtPayload } from 'jsonwebtoken';
 import 'dotenv/config';
-
-const jwtSecret = process.env.SUPABASE_JWT_SECRET as string;
-
-if (!jwtSecret) {
-  throw new Error('SUPABASE_JWT_SECRET is not set in environment variables');
-}
+import { supabaseAuthClient } from '../db/index.js';
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 
-export function requireAuth(
+export async function requireAuth(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
@@ -26,16 +20,17 @@ export function requireAuth(
   const token = authHeader.substring('Bearer '.length).trim();
 
   try {
-    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    const { data, error } = await supabaseAuthClient.auth.getUser(token);
 
-    if (!decoded.sub || typeof decoded.sub !== 'string') {
-      return res.status(401).json({ error: 'Invalid token: no subject' });
+    if (error || !data.user) {
+      console.error('Supabase auth.getUser error:', error);
+      return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    req.userId = decoded.sub;
+    req.userId = data.user.id;
     next();
   } catch (err) {
-    console.error('JWT verification failed:', err);
+    console.error('Auth middleware unexpected error:', err);
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
