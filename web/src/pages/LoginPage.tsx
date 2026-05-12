@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import logo from '../assets/wellsync-logo.png';
+import './LoginPage.css';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -19,25 +20,16 @@ const LoginPage: React.FC = () => {
 
     try {
       if (mode === 'register') {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password
-        });
+        const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        // After sign up, Supabase may send confirmation email depending on settings
-        // For now, just switch to login mode
         setMode('login');
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
-          password
+          password,
         });
         if (error) throw error;
-
-        if (data.session) {
-          // Successful login, go to dashboard
-          navigate('/dashboard');
-        }
+        if (data.session) navigate('/dashboard');
       }
     } catch (err: any) {
       setError(err.message ?? 'Something went wrong');
@@ -47,59 +39,78 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '40px auto', padding: 20 }}>
-      <h1>WellSync {mode === 'login' ? 'Login' : 'Register'}</h1>
+    <div className="ws-page">
+      <div className="ws-blob ws-blob--tl" />
+      <div className="ws-blob ws-blob--br" />
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{ width: '100%' }}
-            />
-          </label>
+      <div className="ws-shell">
+        <div className="ws-brand">
+          <img src={logo} alt="WellSync" className="ws-logo" draggable={false} />
+          <p className="ws-tagline">Your health in sync</p>
         </div>
 
-        <div style={{ marginBottom: 10 }}>
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{ width: '100%' }}
-            />
-          </label>
+        <div className="ws-card">
+          <h1 className="ws-title">
+            {mode === 'login' ? 'Welcome back' : 'Create your account'}
+          </h1>
+          <p className="ws-subtitle">
+            {mode === 'login'
+              ? 'Sign in to continue your wellness journey.'
+              : 'Start syncing your health today.'}
+          </p>
+
+          <form onSubmit={handleSubmit} className="ws-form">
+            <label className="ws-field">
+              <span className="ws-label">Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="you@example.com"
+                className="ws-input"
+              />
+            </label>
+
+            <label className="ws-field">
+              <span className="ws-label">Password</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                className="ws-input"
+              />
+            </label>
+
+            {error && <div className="ws-error">{error}</div>}
+
+            <button type="submit" disabled={loading} className="ws-submit">
+              {loading
+                ? 'Please wait...'
+                : mode === 'login'
+                ? 'Sign in'
+                : 'Create account'}
+            </button>
+          </form>
+
+          <div className="ws-switch">
+            {mode === 'login' ? 'New to WellSync? ' : 'Already have an account? '}
+            <button
+              type="button"
+              className="ws-link"
+              onClick={() => setMode((m) => (m === 'login' ? 'register' : 'login'))}
+            >
+              {mode === 'login' ? 'Create an account' : 'Sign in'}
+            </button>
+          </div>
         </div>
 
-        {error && (
-          <div style={{ color: 'red', marginBottom: 10 }}>{error}</div>
-        )}
-
-        <button type="submit" disabled={loading} style={{ width: '100%' }}>
-          {loading
-            ? 'Please wait...'
-            : mode === 'login'
-            ? 'Login'
-            : 'Register'}
-        </button>
-      </form>
-
-      <button
-        style={{ marginTop: 10 }}
-        onClick={() =>
-          setMode((m) => (m === 'login' ? 'register' : 'login'))
-        }
-      >
-        {mode === 'login'
-          ? "Don't have an account? Register"
-          : 'Have an account? Login'}
-      </button>
+        <p className="ws-footer">
+          © {new Date().getFullYear()} WellSync. All rights reserved.
+        </p>
+      </div>
     </div>
   );
 };
