@@ -25,14 +25,23 @@ async function main() {
   console.log('Starting daily aggregation job...');
 
   const now = new Date();
-  // Cutoff: keep last 3 days, aggregate anything strictly before that
-  const cutoffDate = new Date(
+
+  // Start of today in UTC (00:00)
+  const startOfToday = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  );
+  const startOfTodayIso = startOfToday.toISOString().slice(0, 10);
+
+  // Deletion cutoff: keep last 3 days of per-minute data
+  const deletionCutoff = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 3)
   );
-  const cutoffIsoDate = cutoffDate.toISOString().slice(0, 10);
-  console.log('Cutoff date (exclusive):', cutoffIsoDate);
+  const deletionCutoffIso = deletionCutoff.toISOString().slice(0, 10);
 
-  // Step 1: fetch all measurements older than cutoff date
+  console.log('Aggregating all days before:', startOfTodayIso);
+  console.log('Deleting per-minute data before:', deletionCutoffIso);
+
+  // Step 1: fetch all measurements for completed days (before today)
   const { data, error } = await supabaseAdmin
     .from('measurements_minute')
     .select(
@@ -50,20 +59,20 @@ async function main() {
       avg_pressure_hpa
       `
     )
-    .lt('timestamp_minute_utc', cutoffDate.toISOString());
+    .lt('timestamp_minute_utc', startOfToday.toISOString());
 
   if (error) {
-    console.error('Error fetching old measurements_minute:', error);
+    console.error('Error fetching measurements_minute for aggregation:', error);
     process.exit(1);
   }
 
   if (!data || data.length === 0) {
-    console.log('No old per-minute measurements to aggregate. Done.');
+    console.log('No completed-day per-minute measurements to aggregate. Done.');
     return;
   }
 
   const rows = data as MinuteRow[];
-  console.log(`Fetched ${rows.length} old per-minute rows.`);
+  console.log(`Fetched ${rows.length} per-minute rows for completed days.`);
 
   // Step 2: group by (user_id, date)
   const groups = new Map<string, MinuteRow[]>();
@@ -101,7 +110,6 @@ async function main() {
     const [user_idRaw, dateRaw] = key.split('::');
 
     if (!user_idRaw || !dateRaw) {
-      // Skip malformed keys just in case
       continue;
     }
 
@@ -211,18 +219,21 @@ async function main() {
 
   console.log('Upsert into daily_stats completed.');
 
-  // Step 5: delete old measurements_minute rows
+  // Step 5: delete only old per-minute rows (before deletionCutoff)
   const { error: deleteError } = await supabaseAdmin
     .from('measurements_minute')
     .delete()
-    .lt('timestamp_minute_utc', cutoffDate.toISOString());
+    .lt('timestamp_minute_utc', deletionCutoff.toISOString());
 
   if (deleteError) {
     console.error('Error deleting old measurements_minute rows:', deleteError);
     process.exit(1);
   }
 
-  console.log('Deleted old per-minute measurements before', cutoffIsoDate);
+  console.log(
+    'Deleted per-minute measurements before (retention cutoff)',
+    deletionCutoffIso
+  );
   console.log('Daily aggregation job finished.');
 }
 
