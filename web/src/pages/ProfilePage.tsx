@@ -37,17 +37,54 @@ const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
   { value: 'athlete',           label: 'Athlete' },
 ];
 
+/* ─────────── Design tokens (same as login / dashboard) ─────────── */
 const BRAND = {
-  deep: '#1f5f63',
-  mid: '#2f8a8f',
-  light: '#7cc2b5',
-  bg: 'linear-gradient(160deg, #eef7f5 0%, #d6ebe6 100%)',
-  cardBg: 'rgba(255,255,255,0.9)',
-  border: '#d8e9e6',
-  text: '#16302f',
-  muted: '#5b7c79',
+  deep:    '#1f5f63',
+  mid:     '#2f8a8f',
+  light:   '#7cc2b5',
+  bg:      'linear-gradient(160deg, #eef7f5 0%, #d6ebe6 100%)',
+  cardBg:  'rgba(255,255,255,0.88)',
+  border:  '#d8e9e6',
+  text:    '#16302f',
+  muted:   '#5b7c79',
+  errorBg: 'rgba(220, 38, 38, 0.08)',
+  errorBd: 'rgba(220,38,38,0.25)',
+  errorTx: '#9b1c1c',
+  okBg:    'rgba(22, 163, 74, 0.08)',
+  okBd:    'rgba(22,163,74,0.3)',
+  okTx:    '#166534',
 };
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: `1px solid ${BRAND.border}`,
+  fontSize: 14,
+  color: BRAND.text,
+  background: '#ffffff',
+  outline: 'none',
+  transition: 'border-color .2s, box-shadow .2s',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 13,
+  fontWeight: 600,
+  marginBottom: 6,
+  color: BRAND.text,
+};
+
+const cardBase: React.CSSProperties = {
+  background: BRAND.cardBg,
+  borderRadius: 18,
+  border: `1px solid ${BRAND.border}`,
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  boxShadow: '0 16px 40px -20px rgba(31,95,99,0.35)',
+};
+
+/* ─────────────────── Component ─────────────────── */
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -87,7 +124,6 @@ const ProfilePage: React.FC = () => {
       const json = (await res.json()) as ProfileResponse;
 
       if (!json.hasProfile || !json.profile) {
-        // should not happen with your trigger, but handle gracefully
         setProfile({
           full_name: null,
           age: null,
@@ -173,6 +209,56 @@ const ProfilePage: React.FC = () => {
     navigate('/dashboard');
   }
 
+  /* ─────────── Render helpers ─────────── */
+  const Alert = ({
+    type,
+    children,
+  }: {
+    type: 'error' | 'success';
+    children: React.ReactNode;
+  }) => (
+    <div
+      style={{
+        marginBottom: 16,
+        padding: '10px 12px',
+        borderRadius: 10,
+        fontSize: 13,
+        fontWeight: 500,
+        background: type === 'error' ? BRAND.errorBg : BRAND.okBg,
+        border: `1px solid ${type === 'error' ? BRAND.errorBd : BRAND.okBd}`,
+        color: type === 'error' ? BRAND.errorTx : BRAND.okTx,
+      }}
+    >
+      {children}
+    </div>
+  );
+
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <h2
+      style={{
+        margin: 0,
+        fontSize: 18,
+        fontWeight: 700,
+        color: BRAND.text,
+        letterSpacing: '-0.2px',
+      }}
+    >
+      {children}
+    </h2>
+  );
+
+  const SectionSub = ({ children }: { children: React.ReactNode }) => (
+    <p
+      style={{
+        margin: '4px 0 0',
+        fontSize: 13,
+        color: BRAND.muted,
+      }}
+    >
+      {children}
+    </p>
+  );
+
   return (
     <div
       style={{
@@ -182,21 +268,52 @@ const ProfilePage: React.FC = () => {
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
         color: BRAND.text,
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      {/* Header */}
+      {/* Decorative blobs (same as login) */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '-10%',
+          left: '-10%',
+          width: 380,
+          height: 380,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #1f5f63, #7cc2b5)',
+          opacity: 0.22,
+          filter: 'blur(80px)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '-10%',
+          right: '-10%',
+          width: 380,
+          height: 380,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #1f5f63, #7cc2b5)',
+          opacity: 0.16,
+          filter: 'blur(80px)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* ── Header ── */}
       <header
         style={{
+          ...cardBase,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 16,
           padding: '14px 20px',
-          marginBottom: 24,
-          background: BRAND.cardBg,
-          borderRadius: 18,
-          border: `1px solid ${BRAND.border}`,
-          boxShadow: '0 16px 40px -20px rgba(31,95,99,0.35)',
+          marginBottom: 28,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         <button
@@ -205,13 +322,20 @@ const ProfilePage: React.FC = () => {
           style={{
             border: 'none',
             background: '#eaf2f0',
-            padding: '8px 14px',
+            padding: '8px 16px',
             borderRadius: 999,
             cursor: 'pointer',
             fontSize: 13,
             fontWeight: 600,
             color: BRAND.deep,
+            transition: 'transform .1s, background .2s',
           }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = '#dceae7')
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background = '#eaf2f0')
+          }
         >
           ← Dashboard
         </button>
@@ -223,7 +347,7 @@ const ProfilePage: React.FC = () => {
             style={{ height: 32, width: 'auto', background: 'transparent' }}
             draggable={false}
           />
-          <div style={{ lineHeight: 1.2 }}>
+          <div style={{ lineHeight: 1.25 }}>
             <div style={{ fontSize: 16, fontWeight: 700 }}>Profile</div>
             <div style={{ fontSize: 11, color: BRAND.muted }}>
               Keep your details in sync
@@ -234,315 +358,268 @@ const ProfilePage: React.FC = () => {
         <div style={{ width: 100 }} />
       </header>
 
-      {/* Content */}
-      {loading ? (
-        <div
-          style={{
-            padding: 24,
-            background: BRAND.cardBg,
-            borderRadius: 18,
-            border: `1px solid ${BRAND.border}`,
-            boxShadow: '0 16px 40px -20px rgba(31,95,99,0.35)',
-            color: BRAND.muted,
-          }}
-        >
-          Loading profile…
-        </div>
-      ) : !profile ? (
-        <div
-          style={{
-            padding: 24,
-            background: BRAND.cardBg,
-            borderRadius: 18,
-            border: `1px solid ${BRAND.border}`,
-            boxShadow: '0 16px 40px -20px rgba(31,95,99,0.35)',
-            color: BRAND.muted,
-          }}
-        >
-          No profile data available.
-        </div>
-      ) : (
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            maxWidth: 640,
-            margin: '0 auto',
-            padding: 24,
-            background: BRAND.cardBg,
-            borderRadius: 18,
-            border: `1px solid ${BRAND.border}`,
-            boxShadow: '0 16px 40px -20px rgba(31,95,99,0.35)',
-          }}
-        >
-          <h2 style={{ marginTop: 0, marginBottom: 16 }}>Personal details</h2>
-
-          {error && (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: 10,
-                borderRadius: 8,
-                background: 'rgba(220, 38, 38, 0.08)',
-                border: '1px solid rgba(220,38,38,0.25)',
-                color: '#9b1c1c',
-                fontSize: 13,
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: 10,
-                borderRadius: 8,
-                background: 'rgba(22, 163, 74, 0.08)',
-                border: '1px solid rgba(22,163,74,0.3)',
-                color: '#166534',
-                fontSize: 13,
-              }}
-            >
-              {success}
-            </div>
-          )}
-
-          {/* Full name */}
-          <div style={{ marginBottom: 16 }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 4,
-              }}
-            >
-              Full name
-            </label>
-            <input
-              type="text"
-              value={profile.full_name ?? ''}
-              onChange={(e) =>
-                handleFieldChange('full_name', e.target.value || null)
-              }
-              placeholder="Your full name"
-              style={{
-                width: '100%',
-                padding: '8px 10px',
-                borderRadius: 8,
-                border: `1px solid ${BRAND.border}`,
-                fontSize: 14,
-              }}
-            />
-          </div>
-
-          {/* Age / Height / Weight */}
+      {/* ── Content ── */}
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: 720, margin: '0 auto' }}>
+        {loading ? (
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-              gap: 12,
-              marginBottom: 16,
+              ...cardBase,
+              padding: 36,
+              textAlign: 'center',
+              color: BRAND.muted,
+              fontSize: 15,
             }}
           >
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  marginBottom: 4,
-                }}
-              >
-                Age
-              </label>
-              <input
-                type="number"
-                value={profile.age ?? ''}
-                onChange={(e) =>
-                  handleFieldChange(
-                    'age',
-                    e.target.value ? Number(e.target.value) : null
-                  )
-                }
-                placeholder="Years"
-                min={0}
-                style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  border: `1px solid ${BRAND.border}`,
-                  fontSize: 14,
-                }}
-              />
-            </div>
-
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  marginBottom: 4,
-                }}
-              >
-                Height (cm)
-              </label>
-              <input
-                type="number"
-                value={profile.height_cm ?? ''}
-                onChange={(e) =>
-                  handleFieldChange(
-                    'height_cm',
-                    e.target.value ? Number(e.target.value) : null
-                  )
-                }
-                placeholder="e.g. 170"
-                min={0}
-                style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  border: `1px solid ${BRAND.border}`,
-                  fontSize: 14,
-                }}
-              />
-            </div>
-
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  marginBottom: 4,
-                }}
-              >
-                Weight (kg)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={profile.weight_kg ?? ''}
-                onChange={(e) =>
-                  handleFieldChange(
-                    'weight_kg',
-                    e.target.value ? Number(e.target.value) : null
-                  )
-                }
-                placeholder="e.g. 65.5"
-                min={0}
-                style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  border: `1px solid ${BRAND.border}`,
-                  fontSize: 14,
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Activity level */}
-          <div style={{ marginBottom: 16 }}>
-            <label
+            <div
               style={{
-                display: 'block',
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 4,
-              }}
-            >
-              Activity level
-            </label>
-            <select
-              value={profile.activity_level ?? ''}
-              onChange={(e) =>
-                handleFieldChange(
-                  'activity_level',
-                  e.target.value || null
-                )
-              }
-              style={{
-                width: '100%',
-                padding: '8px 10px',
-                borderRadius: 8,
-                border: `1px solid ${BRAND.border}`,
-                fontSize: 14,
-                backgroundColor: '#ffffff',
-              }}
-            >
-              <option value="">Select activity level</option>
-              {ACTIVITY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Step goal */}
-          <div style={{ marginBottom: 20 }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 13,
-                fontWeight: 600,
-                marginBottom: 4,
-              }}
-            >
-              Daily step goal
-            </label>
-            <input
-              type="number"
-              value={profile.step_goal_per_day}
-              onChange={(e) =>
-                handleFieldChange(
-                  'step_goal_per_day',
-                  Number(e.target.value || 0)
-                )
-              }
-              min={0}
-              style={{
-                width: '100%',
-                padding: '8px 10px',
-                borderRadius: 8,
-                border: `1px solid ${BRAND.border}`,
-                fontSize: 14,
+                width: 32,
+                height: 32,
+                border: `3px solid ${BRAND.border}`,
+                borderTopColor: BRAND.deep,
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto 12px',
               }}
             />
-            <p
-              style={{
-                margin: '4px 0 0',
-                fontSize: 12,
-                color: BRAND.muted,
-              }}
-            >
-              This goal is used on your dashboard and in recommendations.
-            </p>
+            Loading profile…
           </div>
-
-          <button
-            type="submit"
-            disabled={saving}
+        ) : !profile ? (
+          <div
             style={{
-              marginTop: 8,
-              padding: '10px 18px',
-              borderRadius: 10,
-              border: 'none',
-              background:
-                'linear-gradient(135deg, #1f5f63 0%, #7cc2b5 100%)',
-              color: '#ffffff',
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
+              ...cardBase,
+              padding: 36,
+              textAlign: 'center',
+              color: BRAND.muted,
+              fontSize: 15,
             }}
           >
-            {saving ? 'Saving…' : 'Save changes'}
-          </button>
-        </form>
-      )}
+            No profile data available.
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ ...cardBase, padding: 28 }}>
+            {/* Title row */}
+            <div style={{ marginBottom: 20 }}>
+              <SectionTitle>Personal details</SectionTitle>
+              <SectionSub>Update your info so WellSync can stay in tune with you.</SectionSub>
+            </div>
+
+            {error && <Alert type="error">{error}</Alert>}
+            {success && <Alert type="success">{success}</Alert>}
+
+            {/* Full name */}
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Full name</label>
+              <input
+                type="text"
+                value={profile.full_name ?? ''}
+                onChange={(e) =>
+                  handleFieldChange('full_name', e.target.value || null)
+                }
+                placeholder="Your full name"
+                style={inputStyle}
+                onFocus={(e) =>
+                  (e.currentTarget.style.borderColor = BRAND.mid)
+                }
+                onBlur={(e) =>
+                  (e.currentTarget.style.borderColor = BRAND.border)
+                }
+              />
+            </div>
+
+            {/* Age / Height / Weight grid */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: 14,
+                marginBottom: 18,
+              }}
+            >
+              <div>
+                <label style={labelStyle}>Age</label>
+                <input
+                  type="number"
+                  value={profile.age ?? ''}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      'age',
+                      e.target.value ? Number(e.target.value) : null
+                    )
+                  }
+                  placeholder="Years"
+                  min={0}
+                  style={inputStyle}
+                  onFocus={(e) =>
+                    (e.currentTarget.style.borderColor = BRAND.mid)
+                  }
+                  onBlur={(e) =>
+                    (e.currentTarget.style.borderColor = BRAND.border)
+                  }
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Height (cm)</label>
+                <input
+                  type="number"
+                  value={profile.height_cm ?? ''}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      'height_cm',
+                      e.target.value ? Number(e.target.value) : null
+                    )
+                  }
+                  placeholder="e.g. 170"
+                  min={0}
+                  style={inputStyle}
+                  onFocus={(e) =>
+                    (e.currentTarget.style.borderColor = BRAND.mid)
+                  }
+                  onBlur={(e) =>
+                    (e.currentTarget.style.borderColor = BRAND.border)
+                  }
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Weight (kg)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={profile.weight_kg ?? ''}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      'weight_kg',
+                      e.target.value ? Number(e.target.value) : null
+                    )
+                  }
+                  placeholder="e.g. 65.5"
+                  min={0}
+                  style={inputStyle}
+                  onFocus={(e) =>
+                    (e.currentTarget.style.borderColor = BRAND.mid)
+                  }
+                  onBlur={(e) =>
+                    (e.currentTarget.style.borderColor = BRAND.border)
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Activity level */}
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Activity level</label>
+              <select
+                value={profile.activity_level ?? ''}
+                onChange={(e) =>
+                  handleFieldChange(
+                    'activity_level',
+                    e.target.value || null
+                  )
+                }
+                style={{
+                  ...inputStyle,
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235b7c79' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 12px center',
+                  paddingRight: 32,
+                }}
+              >
+                <option value="">Select activity level</option>
+                {ACTIVITY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Step goal */}
+            <div style={{ marginBottom: 22 }}>
+              <label style={labelStyle}>Daily step goal</label>
+              <input
+                type="number"
+                value={profile.step_goal_per_day}
+                onChange={(e) =>
+                  handleFieldChange(
+                    'step_goal_per_day',
+                    Number(e.target.value || 0)
+                  )
+                }
+                min={0}
+                style={inputStyle}
+                onFocus={(e) =>
+                  (e.currentTarget.style.borderColor = BRAND.mid)
+                }
+                onBlur={(e) =>
+                  (e.currentTarget.style.borderColor = BRAND.border)
+                }
+              />
+              <p
+                style={{
+                  margin: '6px 0 0',
+                  fontSize: 12,
+                  color: BRAND.muted,
+                }}
+              >
+                This goal is used on your dashboard and in recommendations.
+              </p>
+            </div>
+
+            {/* Divider */}
+            <div
+              style={{
+                height: 1,
+                background: BRAND.border,
+                marginBottom: 22,
+              }}
+            />
+
+            {/* Submit */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="submit"
+                disabled={saving}
+                style={{
+                  padding: '10px 22px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #1f5f63 0%, #7cc2b5 100%)',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  opacity: saving ? 0.7 : 1,
+                  transition: 'opacity .2s, transform .1s',
+                }}
+                onMouseEnter={(e) =>
+                  !saving && (e.currentTarget.style.opacity = '0.92')
+                }
+                onMouseLeave={(e) =>
+                  !saving && (e.currentTarget.style.opacity = '1')
+                }
+                onMouseDown={(e) =>
+                  !saving && (e.currentTarget.style.transform = 'scale(0.98)')
+                }
+                onMouseUp={(e) =>
+                  (e.currentTarget.style.transform = 'scale(1)')
+                }
+              >
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+
+      {/* Spinner keyframes */}
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
