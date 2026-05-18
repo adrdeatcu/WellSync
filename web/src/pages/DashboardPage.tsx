@@ -115,9 +115,15 @@ const DashboardPage: React.FC = () => {
     'No data for today yet. Once measurements arrive, your progress will appear here.';
   if (steps > 0) {
     const pct = progress * 100;
-    if (pct < 30) progressMessage = 'You are just getting started. A short walk will boost your progress.';
-    else if (pct < 80) progressMessage = 'Nice pace! One more walk will put you close to your goal.';
-    else if (pct < 100) progressMessage = 'You are almost there. A little more effort to reach your goal.';
+    if (pct < 30)
+      progressMessage =
+        'You are just getting started. A short walk will boost your progress.';
+    else if (pct < 80)
+      progressMessage =
+        'Nice pace! One more walk will put you close to your goal.';
+    else if (pct < 100)
+      progressMessage =
+        'You are almost there. A little more effort to reach your goal.';
     else progressMessage = 'Goal achieved! Great job today.';
   }
 
@@ -185,7 +191,12 @@ const DashboardPage: React.FC = () => {
           <img
             src={logo}
             alt="WellSync"
-            style={{ height: 44, width: 'auto', display: 'block', background: 'transparent' }}
+            style={{
+              height: 44,
+              width: 'auto',
+              display: 'block',
+              background: 'transparent',
+            }}
             draggable={false}
           />
         </div>
@@ -221,9 +232,15 @@ const DashboardPage: React.FC = () => {
               position: 'relative',
               transition: 'transform 0.15s ease',
             }}
-            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.96)')}
-            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            onMouseDown={(e) =>
+              (e.currentTarget.style.transform = 'scale(0.96)')
+            }
+            onMouseUp={(e) =>
+              (e.currentTarget.style.transform = 'scale(1)')
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.transform = 'scale(1)')
+            }
           >
             <span
               style={{
@@ -333,7 +350,9 @@ const DashboardPage: React.FC = () => {
             />
           </div>
 
-          <p style={{ marginTop: 14, color: '#4a6e6c', fontSize: 14 }}>{progressMessage}</p>
+          <p style={{ marginTop: 14, color: '#4a6e6c', fontSize: 14 }}>
+            {progressMessage}
+          </p>
 
           {/* Stat tiles */}
           {todayStats && todayStats.hasData && stats && (
@@ -345,10 +364,26 @@ const DashboardPage: React.FC = () => {
                 gap: 12,
               }}
             >
-              <StatTile label="Avg Heart Rate" value={stats.avg_heart_rate_bpm ?? '—'} unit="bpm" />
-              <StatTile label="Air Quality" value={stats.avg_air_quality_index ?? '—'} unit="AQI" />
-              <StatTile label="Temperature" value={stats.avg_temperature_c ?? '—'} unit="°C" />
-              <StatTile label="Humidity" value={stats.avg_humidity_percent ?? '—'} unit="%" />
+              <StatTile
+                label="Avg Heart Rate"
+                value={stats.avg_heart_rate_bpm ?? '—'}
+                unit="bpm"
+              />
+              <StatTile
+                label="Air Quality"
+                value={stats.avg_air_quality_index ?? '—'}
+                unit="AQI"
+              />
+              <StatTile
+                label="Temperature"
+                value={stats.avg_temperature_c ?? '—'}
+                unit="°C"
+              />
+              <StatTile
+                label="Humidity"
+                value={stats.avg_humidity_percent ?? '—'}
+                unit="%"
+              />
             </div>
           )}
         </section>
@@ -393,7 +428,14 @@ const DashboardPage: React.FC = () => {
                 marginBottom: 18,
               }}
             >
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: BRAND.text }}>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: 18,
+                  fontWeight: 600,
+                  color: BRAND.text,
+                }}
+              >
                 Account
               </h3>
               <button
@@ -432,7 +474,14 @@ const DashboardPage: React.FC = () => {
                   <button
                     key={sec}
                     type="button"
-                    onClick={() => setPanelSection(sec)}
+                    onClick={() => {
+                      if (sec === 'history') {
+                        setShowUserPanel(false);
+                        navigate('/history');
+                        return;
+                      }
+                      setPanelSection(sec);
+                    }}
                     style={{
                       flex: 1,
                       padding: '8px 12px',
@@ -442,7 +491,9 @@ const DashboardPage: React.FC = () => {
                       fontSize: 13,
                       fontWeight: 600,
                       textTransform: 'capitalize',
-                      background: active ? BRAND.brandGradient : 'transparent',
+                      background: active
+                        ? BRAND.brandGradient
+                        : 'transparent',
                       color: active ? '#fff' : BRAND.muted,
                       boxShadow: active ? BRAND.softShadow : 'none',
                       transition: 'all 0.2s ease',
@@ -455,22 +506,6 @@ const DashboardPage: React.FC = () => {
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {panelSection === 'history' && (
-                <div
-                  style={{
-                    padding: 16,
-                    borderRadius: 14,
-                    border: `1px solid ${BRAND.border}`,
-                    background: '#fff',
-                    fontSize: 14,
-                    color: BRAND.muted,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  History view will show your step totals for the last days
-                  using <code>/api/history/steps</code>.
-                </div>
-              )}
               {panelSection === 'profile' && (
                 <div
                   style={{
@@ -505,9 +540,15 @@ const DashboardPage: React.FC = () => {
                 boxShadow: BRAND.softShadow,
                 transition: 'transform 0.15s ease, opacity 0.15s ease',
               }}
-              onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.99)')}
-              onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              onMouseDown={(e) =>
+                (e.currentTarget.style.transform = 'scale(0.99)')
+              }
+              onMouseUp={(e) =>
+                (e.currentTarget.style.transform = 'scale(1)')
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.transform = 'scale(1)')
+              }
             >
               Log out
             </button>
@@ -518,11 +559,11 @@ const DashboardPage: React.FC = () => {
   );
 };
 
-const StatTile: React.FC<{ label: string; value: number | string; unit: string }> = ({
-  label,
-  value,
-  unit,
-}) => (
+const StatTile: React.FC<{
+  label: string;
+  value: number | string;
+  unit: string;
+}> = ({ label, value, unit }) => (
   <div
     style={{
       padding: '14px 16px',
@@ -532,9 +573,20 @@ const StatTile: React.FC<{ label: string; value: number | string; unit: string }
       boxShadow: '0 2px 8px rgba(31,95,99,0.05)',
     }}
   >
-    <div style={{ fontSize: 12, color: '#7d9492', marginBottom: 4 }}>{label}</div>
+    <div style={{ fontSize: 12, color: '#7d9492', marginBottom: 4 }}>
+      {label}
+    </div>
     <div style={{ fontSize: 18, fontWeight: 600, color: '#1f3b3a' }}>
-      {value} <span style={{ fontSize: 12, fontWeight: 400, color: '#7d9492' }}>{unit}</span>
+      {value}{' '}
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 400,
+          color: '#7d9492',
+        }}
+      >
+        {unit}
+      </span>
     </div>
   </div>
 );
