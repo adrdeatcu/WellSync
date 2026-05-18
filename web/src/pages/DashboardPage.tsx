@@ -1,3 +1,4 @@
+// src/DashboardPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -31,6 +32,20 @@ interface GoalsResponse {
 
 type PanelSection = 'history' | 'profile';
 
+// Shared brand tokens (mirrors LoginPage)
+const BRAND = {
+  bg: 'linear-gradient(160deg, #eef7f5 0%, #d6ebe6 100%)',
+  brandGradient: 'linear-gradient(135deg, #1f5f63 0%, #7cc2b5 100%)',
+  cardShadow: '0 20px 60px -20px rgba(31, 95, 99, 0.35)',
+  softShadow: '0 4px 20px -4px rgba(31, 95, 99, 0.15)',
+  primary: '#1f5f63',
+  accent: '#7cc2b5',
+  text: '#1f3b3a',
+  muted: '#5d7b79',
+  border: '#d8e9e6',
+  cardBg: 'rgba(255,255,255,0.85)',
+};
+
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState<string>('Loading...');
@@ -52,11 +67,8 @@ const DashboardPage: React.FC = () => {
 
       setStatus('Loading stats...');
 
-      // Fetch today stats
       const statsRes = await fetch(`${backendUrl}/api/stats/today`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       if (!statsRes.ok) {
@@ -67,11 +79,8 @@ const DashboardPage: React.FC = () => {
       const statsJson: TodayStatsResponse = await statsRes.json();
       setTodayStats(statsJson);
 
-      // Fetch goals
       const goalsRes = await fetch(`${backendUrl}/api/goals`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
 
       if (goalsRes.ok) {
@@ -106,145 +115,211 @@ const DashboardPage: React.FC = () => {
     'No data for today yet. Once measurements arrive, your progress will appear here.';
   if (steps > 0) {
     const pct = progress * 100;
-    if (pct < 30) {
-      progressMessage =
-        'You are just getting started. A short walk will boost your progress.';
-    } else if (pct < 80) {
-      progressMessage =
-        'Nice pace! One more walk will put you close to your goal.';
-    } else if (pct < 100) {
-      progressMessage =
-        'You are almost there. A little more effort to reach your goal.';
-    } else {
-      progressMessage = 'Goal achieved! Great job today.';
-    }
+    if (pct < 30) progressMessage = 'You are just getting started. A short walk will boost your progress.';
+    else if (pct < 80) progressMessage = 'Nice pace! One more walk will put you close to your goal.';
+    else if (pct < 100) progressMessage = 'You are almost there. A little more effort to reach your goal.';
+    else progressMessage = 'Goal achieved! Great job today.';
   }
+
+  const stats = todayStats?.stats;
 
   return (
     <div
       style={{
+        position: 'relative',
         minHeight: '100vh',
-        background: '#f3f7f6',
+        background: BRAND.bg,
+        overflow: 'hidden',
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        color: BRAND.text,
       }}
     >
+      {/* Decorative blobs (same as login) */}
+      <div
+        style={{
+          pointerEvents: 'none',
+          position: 'absolute',
+          top: -160,
+          left: -160,
+          width: 420,
+          height: 420,
+          borderRadius: '50%',
+          background: BRAND.brandGradient,
+          opacity: 0.35,
+          filter: 'blur(80px)',
+        }}
+      />
+      <div
+        style={{
+          pointerEvents: 'none',
+          position: 'absolute',
+          bottom: -180,
+          right: -180,
+          width: 460,
+          height: 460,
+          borderRadius: '50%',
+          background: BRAND.brandGradient,
+          opacity: 0.28,
+          filter: 'blur(90px)',
+        }}
+      />
+
       {/* Top bar */}
       <header
         style={{
-          height: 60,
-          padding: '0 24px',
+          position: 'relative',
+          zIndex: 2,
+          height: 72,
+          padding: '0 28px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: '#ffffff',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+          background: 'rgba(255,255,255,0.65)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+          borderBottom: `1px solid ${BRAND.border}`,
         }}
       >
-        {/* Left: brand logo only */}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <img
             src={logo}
             alt="WellSync"
-            style={{ height: 32, width: 'auto', display: 'block' }}
+            style={{ height: 44, width: 'auto', display: 'block', background: 'transparent' }}
+            draggable={false}
           />
         </div>
 
-        {/* Center: tagline */}
         <div
           style={{
             flex: 1,
             textAlign: 'center',
-            fontSize: 14,
-            color: '#4a6e6c',
+            fontSize: 13,
+            fontStyle: 'italic',
+            letterSpacing: '0.04em',
+            color: BRAND.muted,
           }}
         >
           Your health in sync
         </div>
 
-        {/* Right: user icon */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 12, color: '#9aa9a6' }}>{status}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span style={{ fontSize: 12, color: '#94a8a5' }}>{status}</span>
           <button
             type="button"
             onClick={() => setShowUserPanel(true)}
+            aria-label="Open account panel"
             style={{
-              width: 36,
-              height: 36,
+              width: 42,
+              height: 42,
               borderRadius: '50%',
               border: 'none',
-              background: '#eaf5f3',
-              color: '#1f5f63',
+              background: BRAND.brandGradient,
+              color: '#fff',
               cursor: 'pointer',
+              boxShadow: BRAND.softShadow,
               position: 'relative',
+              transition: 'transform 0.15s ease',
             }}
-            aria-label="Open account panel"
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.96)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
           >
-            {/* Simple user icon using CSS: head + body */}
             <span
               style={{
                 position: 'absolute',
-                top: 6,
+                top: 9,
                 left: '50%',
                 transform: 'translateX(-50%)',
                 width: 14,
                 height: 14,
                 borderRadius: '50%',
-                backgroundColor: '#1f5f63',
+                background: '#fff',
               }}
             />
             <span
               style={{
                 position: 'absolute',
-                bottom: 5,
+                bottom: 7,
                 left: '50%',
                 transform: 'translateX(-50%)',
-                width: 20,
-                height: 10,
+                width: 22,
+                height: 11,
                 borderRadius: 999,
-                backgroundColor: '#1f5f63',
+                background: '#fff',
               }}
             />
           </button>
         </div>
       </header>
 
-      {/* Main content (Today) */}
-      <main style={{ maxWidth: 700, margin: '24px auto', padding: '0 16px' }}>
-        <div
+      {/* Main */}
+      <main
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          maxWidth: 780,
+          margin: '40px auto',
+          padding: '0 20px',
+        }}
+      >
+        {/* Hero card */}
+        <section
           style={{
-            padding: 20,
-            borderRadius: 16,
-            border: '1px solid #d8e9e6',
-            background: '#ffffff',
-            boxShadow: '0 16px 40px -24px rgba(31,95,99,0.35)',
+            padding: 32,
+            borderRadius: 24,
+            border: `1px solid ${BRAND.border}`,
+            background: BRAND.cardBg,
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            boxShadow: BRAND.cardShadow,
           }}
         >
-          <h2 style={{ margin: 0, marginBottom: 4 }}>Welcome back</h2>
-          <p
+          <h2
             style={{
               margin: 0,
-              marginBottom: 16,
-              color: '#5d7b79',
+              fontSize: 26,
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
+              color: BRAND.text,
             }}
           >
+            Welcome back
+          </h2>
+          <p style={{ margin: '6px 0 24px', color: BRAND.muted, fontSize: 14 }}>
             Steps progress for today
           </p>
 
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#1f3b3a' }}>
-            {steps.toLocaleString()}{' '}
-            <span style={{ fontSize: 16, fontWeight: 400 }}>steps</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+            <span
+              style={{
+                fontSize: 44,
+                fontWeight: 700,
+                lineHeight: 1,
+                background: BRAND.brandGradient,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {steps.toLocaleString()}
+            </span>
+            <span style={{ fontSize: 16, color: BRAND.muted }}>steps</span>
           </div>
-          <p style={{ margin: 4, color: '#5d7b79' }}>
-            of {stepGoal.toLocaleString()} steps
+          <p style={{ margin: '6px 0 0', color: BRAND.muted, fontSize: 14 }}>
+            of {stepGoal.toLocaleString()} goal
           </p>
 
           {/* Progress bar */}
           <div
             style={{
-              marginTop: 12,
+              marginTop: 18,
               width: '100%',
-              height: 10,
+              height: 12,
               borderRadius: 999,
-              background: '#f1f5f4',
+              background: '#eaf2f0',
+              overflow: 'hidden',
+              boxShadow: 'inset 0 1px 3px rgba(31,95,99,0.08)',
             }}
           >
             <div
@@ -252,170 +327,187 @@ const DashboardPage: React.FC = () => {
                 width: `${progress * 100}%`,
                 height: '100%',
                 borderRadius: 999,
-                background:
-                  'linear-gradient(135deg, #1f5f63 0%, #7cc2b5 100%)',
-                transition: 'width 0.3s ease',
+                background: BRAND.brandGradient,
+                transition: 'width 0.5s ease',
               }}
             />
           </div>
 
-          <p style={{ marginTop: 12, color: '#4a6e6c' }}>{progressMessage}</p>
+          <p style={{ marginTop: 14, color: '#4a6e6c', fontSize: 14 }}>{progressMessage}</p>
 
-          {/* Simple HR/environment summary if data exists */}
-          {todayStats && todayStats.hasData && todayStats.stats && (
+          {/* Stat tiles */}
+          {todayStats && todayStats.hasData && stats && (
             <div
               style={{
-                marginTop: 16,
-                fontSize: 14,
-                color: '#5d7b79',
+                marginTop: 24,
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                gap: 8,
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                gap: 12,
               }}
             >
-              <p style={{ margin: 2 }}>
-                Avg HR: {todayStats.stats.avg_heart_rate_bpm ?? '—'} bpm
-              </p>
-              <p style={{ margin: 2 }}>
-                Avg AQI: {todayStats.stats.avg_air_quality_index ?? '—'}
-              </p>
-              <p style={{ margin: 2 }}>
-                Temp: {todayStats.stats.avg_temperature_c ?? '—'} °C
-              </p>
+              <StatTile label="Avg Heart Rate" value={stats.avg_heart_rate_bpm ?? '—'} unit="bpm" />
+              <StatTile label="Air Quality" value={stats.avg_air_quality_index ?? '—'} unit="AQI" />
+              <StatTile label="Temperature" value={stats.avg_temperature_c ?? '—'} unit="°C" />
+              <StatTile label="Humidity" value={stats.avg_humidity_percent ?? '—'} unit="%" />
             </div>
           )}
-        </div>
+        </section>
       </main>
 
-      {/* Right side user panel overlay */}
+      {/* Right side panel */}
       {showUserPanel && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.25)',
+            background: 'rgba(15, 40, 42, 0.35)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
             display: 'flex',
             justifyContent: 'flex-end',
+            zIndex: 50,
           }}
           onClick={() => setShowUserPanel(false)}
         >
           <div
             style={{
-              width: 320,
-              maxWidth: '80%',
+              width: 360,
+              maxWidth: '85%',
               height: '100%',
-              background: '#ffffff',
-              boxShadow: '-4px 0 20px rgba(0,0,0,0.15)',
-              padding: 16,
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              boxShadow: '-10px 0 40px rgba(31,95,99,0.2)',
+              padding: 24,
               display: 'flex',
               flexDirection: 'column',
+              borderLeft: `1px solid ${BRAND.border}`,
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Panel header */}
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: 12,
+                marginBottom: 18,
               }}
             >
-              <h3 style={{ margin: 0 }}>Account</h3>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: BRAND.text }}>
+                Account
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowUserPanel(false)}
                 style={{
                   border: 'none',
-                  background: 'transparent',
+                  background: '#eef5f3',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
                   cursor: 'pointer',
                   fontSize: 18,
+                  color: BRAND.primary,
+                  lineHeight: 1,
                 }}
               >
                 ×
               </button>
             </div>
 
-            {/* Section tabs */}
+            {/* Tabs */}
             <div
               style={{
                 display: 'flex',
-                gap: 8,
-                marginBottom: 12,
+                gap: 6,
+                padding: 4,
+                marginBottom: 16,
+                background: '#eef5f3',
+                borderRadius: 999,
               }}
             >
-              <button
-                type="button"
-                onClick={() => setPanelSection('history')}
-                style={{
-                  flex: 1,
-                  padding: '6px 8px',
-                  borderRadius: 999,
-                  border:
-                    panelSection === 'history'
-                      ? '1px solid #1f5f63'
-                      : '1px solid #d8e9e6',
-                  background:
-                    panelSection === 'history'
-                      ? 'rgba(31,95,99,0.08)'
-                      : '#ffffff',
-                  cursor: 'pointer',
-                }}
-              >
-                History
-              </button>
-              <button
-                type="button"
-                onClick={() => setPanelSection('profile')}
-                style={{
-                  flex: 1,
-                  padding: '6px 8px',
-                  borderRadius: 999,
-                  border:
-                    panelSection === 'profile'
-                      ? '1px solid #1f5f63'
-                      : '1px solid #d8e9e6',
-                  background:
-                    panelSection === 'profile'
-                      ? 'rgba(31,95,99,0.08)'
-                      : '#ffffff',
-                  cursor: 'pointer',
-                }}
-              >
-                Profile
-              </button>
+              {(['history', 'profile'] as PanelSection[]).map((sec) => {
+                const active = panelSection === sec;
+                return (
+                  <button
+                    key={sec}
+                    type="button"
+                    onClick={() => setPanelSection(sec)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: 999,
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textTransform: 'capitalize',
+                      background: active ? BRAND.brandGradient : 'transparent',
+                      color: active ? '#fff' : BRAND.muted,
+                      boxShadow: active ? BRAND.softShadow : 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {sec}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Panel content placeholder */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {panelSection === 'history' && (
-                <p style={{ fontSize: 14, color: '#5d7b79' }}>
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 14,
+                    border: `1px solid ${BRAND.border}`,
+                    background: '#fff',
+                    fontSize: 14,
+                    color: BRAND.muted,
+                    lineHeight: 1.5,
+                  }}
+                >
                   History view will show your step totals for the last days
-                  using /api/history/steps. (We will implement this next.)
-                </p>
+                  using <code>/api/history/steps</code>.
+                </div>
               )}
               {panelSection === 'profile' && (
-                <p style={{ fontSize: 14, color: '#5d7b79' }}>
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 14,
+                    border: `1px solid ${BRAND.border}`,
+                    background: '#fff',
+                    fontSize: 14,
+                    color: BRAND.muted,
+                    lineHeight: 1.5,
+                  }}
+                >
                   Profile view will let you edit your daily step goal and
-                  thresholds via /api/goals. (We will implement this next.)
-                </p>
+                  thresholds via <code>/api/goals</code>.
+                </div>
               )}
             </div>
 
-            {/* Logout button */}
             <button
               type="button"
               onClick={handleLogout}
               style={{
-                marginTop: 12,
-                height: 40,
-                borderRadius: 8,
+                marginTop: 20,
+                height: 44,
+                borderRadius: 12,
                 border: 'none',
-                background: 'linear-gradient(135deg, #1f5f63, #7cc2b5)',
+                background: BRAND.brandGradient,
                 color: '#ffffff',
                 fontWeight: 600,
+                fontSize: 14,
                 cursor: 'pointer',
+                boxShadow: BRAND.softShadow,
+                transition: 'transform 0.15s ease, opacity 0.15s ease',
               }}
+              onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.99)')}
+              onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
               Log out
             </button>
@@ -425,5 +517,26 @@ const DashboardPage: React.FC = () => {
     </div>
   );
 };
+
+const StatTile: React.FC<{ label: string; value: number | string; unit: string }> = ({
+  label,
+  value,
+  unit,
+}) => (
+  <div
+    style={{
+      padding: '14px 16px',
+      borderRadius: 14,
+      border: '1px solid #e2efec',
+      background: '#ffffff',
+      boxShadow: '0 2px 8px rgba(31,95,99,0.05)',
+    }}
+  >
+    <div style={{ fontSize: 12, color: '#7d9492', marginBottom: 4 }}>{label}</div>
+    <div style={{ fontSize: 18, fontWeight: 600, color: '#1f3b3a' }}>
+      {value} <span style={{ fontSize: 12, fontWeight: 400, color: '#7d9492' }}>{unit}</span>
+    </div>
+  </div>
+);
 
 export default DashboardPage;
