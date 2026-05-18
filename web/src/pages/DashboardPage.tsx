@@ -480,6 +480,11 @@ const DashboardPage: React.FC = () => {
                         navigate('/history');
                         return;
                       }
+                      if (sec === 'profile') {
+                        setShowUserPanel(false);
+                        navigate('/profile');
+                        return;
+                      }
                       setPanelSection(sec);
                     }}
                     style={{
@@ -505,24 +510,7 @@ const DashboardPage: React.FC = () => {
               })}
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              {panelSection === 'profile' && (
-                <div
-                  style={{
-                    padding: 16,
-                    borderRadius: 14,
-                    border: `1px solid ${BRAND.border}`,
-                    background: '#fff',
-                    fontSize: 14,
-                    color: BRAND.muted,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Profile view will let you edit your daily step goal and
-                  thresholds via <code>/api/goals</code>.
-                </div>
-              )}
-            </div>
+            <div style={{ flex: 1, overflowY: 'auto' }} />
 
             <button
               type="button"
