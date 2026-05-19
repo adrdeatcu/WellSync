@@ -4,7 +4,12 @@ backend/node_modules/
 
 # Environment files
 .env
+.env.local
+.env.*
 backend/.env
 
 # Build output
 backend/dist/
+
+secure/
+*.json

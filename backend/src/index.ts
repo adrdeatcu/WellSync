@@ -8,6 +8,7 @@ import goalsRouter from './routes/goalsRoutes.js';
 import statsRouter from './routes/statsRoutes.js';
 import measurementsRouter from './routes/measurementsRoutes.js';
 import profileRouter from './routes/profileRoutes.js';
+import coachRoutes from './routes/coachRoutes.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -29,6 +30,7 @@ app.use('/api', statsRouter);
 app.use('/api', goalsRouter);
 app.use('/api', historyRouter);
 app.use('/api', profileRouter);
+app.use('/api/coach', coachRoutes);
 
 app.listen(port, async () => {
   console.log(`WellSync backend listening on port ${port}`);
