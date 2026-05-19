@@ -6,7 +6,13 @@ const router = express.Router();
 
 router.post('/daily', async (req: Request, res: Response) => {
   try {
-    const { userId, mood, sleepHours, notes } = req.body;
+    const { userId, mood, sleepHours, notes, question } = req.body as {
+      userId: string;
+      mood?: string;
+      sleepHours?: number;
+      notes?: string;
+      question?: string;
+    };
 
     if (!userId) {
       return res.status(400).json({ error: 'userId is required' });
@@ -19,9 +25,12 @@ router.post('/daily', async (req: Request, res: Response) => {
       mood,
       sleepHours,
       notes,
+      question: question || undefined,
     };
 
-    const advice = await getDailyCoachAdvice(userId, context);
+    const mode: 'daily' | 'question' = question ? 'question' : 'daily';
+
+    const advice = await getDailyCoachAdvice(userId, context, mode);
 
     res.json(advice);
   } catch (error: any) {

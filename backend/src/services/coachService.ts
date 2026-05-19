@@ -21,6 +21,9 @@ export interface CoachContext {
   mood?: string | undefined;
   sleepHours?: number | undefined;
   notes?: string | undefined;
+
+  // New: what the user actually asked in this request
+  question?: string | undefined;
 }
 
 export interface CoachAdvice {
@@ -34,9 +37,10 @@ export interface CoachAdvice {
  */
 export async function getDailyCoachAdvice(
   userId: string,
-  context: CoachContext
+  context: CoachContext,
+  mode: 'daily' | 'question' = 'daily'
 ): Promise<CoachAdvice> {
-  const prompt = buildCoachPrompt(userId, context);
+  const prompt = buildCoachPrompt(userId, context, mode);
 
   const rawText = await generateText(prompt);
 
@@ -48,14 +52,18 @@ export async function getDailyCoachAdvice(
 /**
  * Turn the structured context into a natural‑language prompt.
  */
-function buildCoachPrompt(userId: string, context: CoachContext): string {
+function buildCoachPrompt(
+  userId: string,
+  context: CoachContext,
+  mode: 'daily' | 'question'
+): string {
   const parts: string[] = [];
 
   parts.push(
     `You are WellSync, a friendly and practical digital health coach.` +
       ` You talk to one user identified as ID ${userId}.` +
       ` Use simple language and give short, concrete suggestions.` +
-      ` Focus strictly on fitness, movement, and general well-being,` +
+      ` Focus strictly on fitness, movement, general well-being, and basic nutrition,` +
       ` and never give medical diagnoses or treatments.`
   );
 
@@ -112,6 +120,19 @@ function buildCoachPrompt(userId: string, context: CoachContext): string {
     }
   }
 
+  // QUESTION MODE
+  if (mode === 'question' && context.question) {
+    parts.push(`The user has asked a specific question: "${context.question}".`);
+    parts.push(
+      `Answer this question directly in 2–3 concise sentences, using the provided stats when relevant.` +
+        ` If the question is about today's steps and stepsToday is known, clearly state the exact number (for example: "You have 6,600 steps so far today").` +
+        ` Stay within health, fitness, general well-being, and basic nutrition.` +
+        ` If the question is outside these topics, politely refuse and remind the user that you are a health and fitness coach.`
+    );
+    return parts.join('\n');
+  }
+
+  // DAILY MODE (existing behavior)
   parts.push(
     `Based on this profile, today's stats, and recent history:` +
       ` 1) Start with a 1–2 sentence summary of how the user's activity today compares to their usual pattern.` +

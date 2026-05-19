@@ -54,6 +54,13 @@ const DashboardPage: React.FC = () => {
   const [showUserPanel, setShowUserPanel] = useState(false);
   const [panelSection, setPanelSection] = useState<PanelSection>('history');
 
+  // AI coach state
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [coachSummary, setCoachSummary] = useState<string | null>(null);
+  const [coachSteps, setCoachSteps] = useState<string[]>([]);
+  const [coachError, setCoachError] = useState<string | null>(null);
+  const [coachQuestion, setCoachQuestion] = useState(''); // renamed from coachNote
+
   useEffect(() => {
     async function load() {
       const {
@@ -97,6 +104,57 @@ const DashboardPage: React.FC = () => {
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate('/login');
+  }
+
+  async function handleAskCoach() {
+    setCoachLoading(true);
+    setCoachError(null);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session || !session.user) {
+        setCoachError('You must be logged in to use the coach.');
+        setCoachLoading(false);
+        return;
+      }
+
+      const body: any = {
+        userId: session.user.id,
+      };
+
+      // Only send question if user typed something
+      if (coachQuestion.trim().length > 0) {
+        body.question = coachQuestion.trim();
+      }
+
+      const response = await fetch(`${backendUrl}/api/coach/daily`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        setCoachError('Failed to get advice from the coach.');
+        setCoachLoading(false);
+        return;
+      }
+
+      const data: { summary: string; actionSteps: string[] } =
+        await response.json();
+
+      setCoachSummary(data.summary);
+      setCoachSteps(data.actionSteps);
+    } catch (err) {
+      console.error('Error calling AI coach:', err);
+      setCoachError('Unexpected error contacting the coach.');
+    } finally {
+      setCoachLoading(false);
+    }
   }
 
   const steps =
@@ -386,6 +444,124 @@ const DashboardPage: React.FC = () => {
               />
             </div>
           )}
+
+          {/* AI Coach panel */}
+          <div
+            style={{
+              marginTop: 28,
+              padding: 16,
+              borderRadius: 18,
+              border: `1px dashed ${BRAND.border}`,
+              background: 'rgba(255,255,255,0.9)',
+              boxShadow: BRAND.softShadow,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: BRAND.text,
+                  }}
+                >
+                  AI coach
+                </div>
+                <div style={{ fontSize: 12, color: BRAND.muted }}>
+                  Get a short tip based on your recent steps and heart rate, or
+                  ask a specific question about your activity.
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAskCoach}
+                disabled={coachLoading}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 999,
+                  border: 'none',
+                  background: BRAND.brandGradient,
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: coachLoading ? 'default' : 'pointer',
+                  boxShadow: BRAND.softShadow,
+                  opacity: coachLoading ? 0.7 : 1,
+                }}
+              >
+                {coachLoading ? 'Thinking…' : 'Ask coach'}
+              </button>
+            </div>
+
+            <textarea
+              placeholder="Optional: ask something like “How many steps do I have today?” or tell the coach how your day feels…"
+              value={coachQuestion}
+              onChange={(e) => setCoachQuestion(e.target.value)}
+              style={{
+                marginTop: 6,
+                width: '100%',
+                minHeight: 60,
+                borderRadius: 12,
+                border: `1px solid ${BRAND.border}`,
+                padding: 10,
+                fontSize: 13,
+                resize: 'vertical',
+                fontFamily: 'inherit',
+                color: BRAND.text,
+              }}
+            />
+
+            {coachError && (
+              <div style={{ fontSize: 12, color: '#b00020' }}>{coachError}</div>
+            )}
+
+            {coachSummary && (
+              <div
+                style={{
+                  marginTop: 6,
+                  paddingTop: 6,
+                  borderTop: `1px solid ${BRAND.border}`,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: BRAND.text,
+                    marginBottom: 6,
+                  }}
+                >
+                  {coachSummary}
+                </div>
+                {coachSteps.length > 0 && (
+                  <ul
+                    style={{
+                      margin: 0,
+                      paddingLeft: 18,
+                      fontSize: 13,
+                      color: BRAND.text,
+                    }}
+                  >
+                    {coachSteps.map((step, idx) => (
+                      <li key={idx} style={{ marginBottom: 4 }}>
+                        {step}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
         </section>
       </main>
 
