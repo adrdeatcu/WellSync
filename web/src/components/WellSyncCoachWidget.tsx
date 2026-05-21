@@ -1,12 +1,13 @@
 // src/components/WellSyncCoachWidget.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import coachImg from '../assets/wellsync_coach.png'; // make sure this PNG has transparent background
+import coachImg from '../assets/wellsync_coach.png'; // transparent PNG
 
 const WellSyncCoachWidget: React.FC = () => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
+  const [showBubble, setShowBubble] = useState(true); // controls the text bubble
 
   // Close when clicking outside
   useEffect(() => {
@@ -23,9 +24,15 @@ const WellSyncCoachWidget: React.FC = () => {
   }, [isOpen]);
 
   function handleToggle() {
-    setIsOpen((prev) => !prev);
+    const nextOpen = !isOpen;
+    setIsOpen(nextOpen);
     setIsClicked(true);
     setTimeout(() => setIsClicked(false), 200);
+
+    // Hide the bubble once user opens the menu for the first time
+    if (!isOpen && showBubble) {
+      setShowBubble(false);
+    }
   }
 
   function handleGoCoach(topic: string) {
@@ -78,8 +85,8 @@ const WellSyncCoachWidget: React.FC = () => {
         >
           <div
             style={{
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               borderRadius: '999px',
               background: 'rgba(255,255,255,0.16)',
               border: '2px solid rgba(255,255,255,0.3)',
@@ -92,7 +99,7 @@ const WellSyncCoachWidget: React.FC = () => {
             <img
               src={coachImg}
               alt="WellSync Coach"
-              style={{ width: 38, height: 38, objectFit: 'contain' }}
+              style={{ width: 42, height: 42, objectFit: 'contain' }}
             />
           </div>
           <div style={{ flex: 1 }}>
@@ -254,19 +261,18 @@ const WellSyncCoachWidget: React.FC = () => {
         aria-label={isOpen ? 'Close WellSync Coach' : 'Open WellSync Coach'}
         style={{
           position: 'relative',
-          width: 96, // bigger
-          height: 96,
+          width: 120,
+          height: 120,
           borderRadius: '999px',
           border: 'none',
           padding: 0,
           cursor: 'pointer',
-          // circular background behind the bot
-          background: 'radial-gradient(circle at 30% 0%, #ffffff 0%, #e1f3f0 40%, #c6e7e1 100%)',
+          background:
+            'radial-gradient(circle at 30% 0%, #ffffff 0%, #e1f3f0 40%, #c6e7e1 100%)',
           boxShadow: '0 14px 28px rgba(0,0,0,0.35)',
           display: 'grid',
           placeItems: 'center',
           overflow: 'hidden',
-          // idle float + click animation combined
           transform: isOpen
             ? 'translate(-8px, -10px) scale(1.05)'
             : isClicked
@@ -292,8 +298,8 @@ const WellSyncCoachWidget: React.FC = () => {
           src={coachImg}
           alt="WellSync AI Coach"
           style={{
-            width: 80,
-            height: 80,
+            width: 100,
+            height: 100,
             objectFit: 'contain',
             objectPosition: 'center',
             display: 'block',
@@ -301,52 +307,29 @@ const WellSyncCoachWidget: React.FC = () => {
             pointerEvents: 'none',
           }}
         />
+      </button>
 
-        {/* Speech label */}
-        {!isOpen && (
-          <span
-            style={{
-              position: 'absolute',
-              right: '100%',
-              bottom: 22,
-              marginRight: 8,
-              background: '#ffffff',
-              borderRadius: 12,
-              border: '1px solid #d8e9e6',
-              padding: '4px 10px',
-              fontSize: 12,
-              color: '#1f3b3a',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              whiteSpace: 'nowrap',
-              opacity: 1,
-              transform: 'translateX(0)',
-            }}
-          >
-            Hi, I’m WellSync Coach. Click me!
-          </span>
-        )}
-
-        {/* Notification badge (always for now) */}
-        <span
+      {/* Speech bubble: separate from button so it is not clipped */}
+      {showBubble && !isOpen && (
+        <div
           style={{
             position: 'absolute',
-            top: 6,
-            right: 4,
-            width: 20,
-            height: 20,
-            borderRadius: 999,
-            background: '#e84d4d',
-            color: '#fff',
-            fontSize: 11,
-            fontWeight: 700,
-            display: 'grid',
-            placeItems: 'center',
-            border: '2px solid #f7f6f2',
+            bottom: 140, // above the circle
+            right: 0, // aligned with the circle
+            background: '#ffffff',
+            borderRadius: 12,
+            border: '1px solid #d8e9e6',
+            padding: '8px 12px',
+            fontSize: 13,
+            color: '#1f3b3a',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            maxWidth: 260,
+            textAlign: 'left',
           }}
         >
-          1
-        </span>
-      </button>
+          Hi, I’m WellSync Coach. Tap me for more info.
+        </div>
+      )}
     </div>
   );
 };
