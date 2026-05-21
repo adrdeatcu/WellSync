@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import logo from '../assets/wellsync-logo.png';
+import WellSyncCoachWidget from '../components/WellSyncCoachWidget';
 
 const backendUrl = process.env.REACT_APP_BACKEND_URL ?? 'http://localhost:4000';
 
@@ -505,7 +506,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             <textarea
-              placeholder="Optional: ask something like “How many steps do I have today?” or tell the coach how your day feels…"
+              placeholder='Optional: ask something like “How many steps do I have today?” or tell the coach how your day feels…'
               value={coachQuestion}
               onChange={(e) => setCoachQuestion(e.target.value)}
               style={{
@@ -719,6 +720,9 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* WellSync Coach floating widget */}
+      <WellSyncCoachWidget />
     </div>
   );
 };
