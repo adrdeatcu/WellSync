@@ -429,6 +429,35 @@ const DashboardPage: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {/* NEW: Community nav button */}
+              <button
+                type="button"
+                onClick={() => navigate('/community')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 999,
+                  border: `1px solid ${BRAND.border}`,
+                  background: '#ffffff',
+                  color: BRAND.text,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Community
+              </button>
+
+    <span style={{ fontSize: 12, color: '#94a8a5' }}>{status}</span>
+    <button
+      type="button"
+      onClick={() => setShowUserPanel(true)}
+      aria-label="Open account panel"
+      /* existing styles and handlers */
+    >
+      {/* avatar */}
+    </button>
+  </div>
           <span style={{ fontSize: 12, color: '#94a8a5' }}>{status}</span>
           <button
             type="button"
