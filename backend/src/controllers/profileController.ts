@@ -79,6 +79,8 @@ export async function putProfile(req: AuthenticatedRequest, res: Response) {
         .json({ error: 'step_goal_per_day must be a number' });
     }
 
+    // username is just string | null, no extra validation for now
+
     const updated = await updateProfileForUser(userId, body);
 
     return res.status(200).json({ profile: updated });

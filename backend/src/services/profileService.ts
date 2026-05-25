@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '../db/index.js';
 
 export interface Profile {
+  username: string | null;
   full_name: string | null;
   age: number | null;
   height_cm: number | null;
@@ -13,6 +14,7 @@ export interface Profile {
 }
 
 export interface UpdateProfileInput {
+  username?: string | null;
   full_name?: string | null;
   age?: number | null;
   height_cm?: number | null;
@@ -29,6 +31,7 @@ export async function getProfileForUser(userId: string): Promise<Profile | null>
     .from('profiles')
     .select(
       `
+      username,
       full_name,
       age,
       height_cm,
@@ -56,6 +59,7 @@ export async function getProfileForUser(userId: string): Promise<Profile | null>
   }
 
   return {
+    username: data.username ?? null,
     full_name: data.full_name ?? null,
     age: data.age ?? null,
     height_cm: data.height_cm ?? null,
@@ -74,6 +78,9 @@ export async function updateProfileForUser(
 ): Promise<Profile> {
   const update: Record<string, unknown> = {};
 
+  if ('username' in input) {
+    update.username = input.username;
+  }
   if ('full_name' in input) {
     update.full_name = input.full_name;
   }
@@ -108,6 +115,7 @@ export async function updateProfileForUser(
     .eq('id', userId)
     .select(
       `
+      username,
       full_name,
       age,
       height_cm,
@@ -126,6 +134,7 @@ export async function updateProfileForUser(
   }
 
   return {
+    username: data.username ?? null,
     full_name: data.full_name ?? null,
     age: data.age ?? null,
     height_cm: data.height_cm ?? null,

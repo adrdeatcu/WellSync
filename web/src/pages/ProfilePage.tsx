@@ -11,6 +11,7 @@ interface ProfileResponse {
 }
 
 interface Profile {
+  username: string | null;
   full_name: string | null;
   age: number | null;
   height_cm: number | null;
@@ -125,6 +126,7 @@ const ProfilePage: React.FC = () => {
 
       if (!json.hasProfile || !json.profile) {
         setProfile({
+          username: null,
           full_name: null,
           age: null,
           height_cm: null,
@@ -172,6 +174,7 @@ const ProfilePage: React.FC = () => {
 
     try {
       const body = {
+        username: profile.username,
         full_name: profile.full_name,
         age: profile.age,
         height_cm: profile.height_cm,
@@ -359,7 +362,14 @@ const ProfilePage: React.FC = () => {
       </header>
 
       {/* ── Content ── */}
-      <div style={{ position: 'relative', zIndex: 1, maxWidth: 720, margin: '0 auto' }}>
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          maxWidth: 720,
+          margin: '0 auto',
+        }}
+      >
         {loading ? (
           <div
             style={{
@@ -400,11 +410,43 @@ const ProfilePage: React.FC = () => {
             {/* Title row */}
             <div style={{ marginBottom: 20 }}>
               <SectionTitle>Personal details</SectionTitle>
-              <SectionSub>Update your info so WellSync can stay in tune with you.</SectionSub>
+              <SectionSub>
+                Update your info so WellSync can stay in tune with you.
+              </SectionSub>
             </div>
 
             {error && <Alert type="error">{error}</Alert>}
             {success && <Alert type="success">{success}</Alert>}
+
+            {/* Username */}
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Username</label>
+              <input
+                type="text"
+                value={profile.username ?? ''}
+                onChange={(e) =>
+                  handleFieldChange('username', e.target.value || null)
+                }
+                placeholder="Choose a unique username, e.g. adrian.d"
+                style={inputStyle}
+                onFocus={(e) =>
+                  (e.currentTarget.style.borderColor = BRAND.mid)
+                }
+                onBlur={(e) =>
+                  (e.currentTarget.style.borderColor = BRAND.border)
+                }
+              />
+              <p
+                style={{
+                  margin: '6px 0 0',
+                  fontSize: 12,
+                  color: BRAND.muted,
+                }}
+              >
+                Friends will find you using this username (for example:
+                @adrian.d).
+              </p>
+            </div>
 
             {/* Full name */}
             <div style={{ marginBottom: 18 }}>
@@ -586,7 +628,8 @@ const ProfilePage: React.FC = () => {
                   padding: '10px 22px',
                   borderRadius: 10,
                   border: 'none',
-                  background: 'linear-gradient(135deg, #1f5f63 0%, #7cc2b5 100%)',
+                  background:
+                    'linear-gradient(135deg, #1f5f63 0%, #7cc2b5 100%)',
                   color: '#ffffff',
                   fontWeight: 600,
                   fontSize: 14,
@@ -601,7 +644,8 @@ const ProfilePage: React.FC = () => {
                   !saving && (e.currentTarget.style.opacity = '1')
                 }
                 onMouseDown={(e) =>
-                  !saving && (e.currentTarget.style.transform = 'scale(0.98)')
+                  !saving &&
+                  (e.currentTarget.style.transform = 'scale(0.98)')
                 }
                 onMouseUp={(e) =>
                   (e.currentTarget.style.transform = 'scale(1)')
