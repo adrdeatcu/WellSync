@@ -1,9 +1,14 @@
-// src/DashboardPage.tsx
+// src/pages/DashboardPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import logo from '../assets/wellsync-logo.png';
 import WellSyncCoachWidget from '../components/WellSyncCoachWidget';
+import FriendsPanel from '../components/FriendsPanel';
+import type {
+  FriendUser,
+  FriendsOverviewResponse,
+} from '../types/friends';
 
 const backendUrl = process.env.REACT_APP_BACKEND_URL ?? 'http://localhost:4000';
 
@@ -33,24 +38,12 @@ interface GoalsResponse {
 
 type PanelSection = 'history' | 'profile';
 
-interface FriendUser {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-}
-
-interface FriendsOverviewResponse {
-  friends: FriendUser[];
-  incoming_requests: FriendUser[];
-  outgoing_requests: FriendUser[];
-}
-
 interface FriendsSearchResponse {
   results: FriendUser[];
 }
 
 // Shared brand tokens (mirrors LoginPage)
-const BRAND = {
+export const BRAND = {
   bg: 'linear-gradient(160deg, #eef7f5 0%, #d6ebe6 100%)',
   brandGradient: 'linear-gradient(135deg, #1f5f63 0%, #7cc2b5 100%)',
   cardShadow: '0 20px 60px -20px rgba(31, 95, 99, 0.35)',
@@ -224,7 +217,6 @@ const DashboardPage: React.FC = () => {
         throw new Error(msg);
       }
 
-      // Refresh overview so outgoing_requests updates
       await reloadFriends();
     } catch (err: any) {
       console.error('Error sending friend request:', err);
@@ -355,7 +347,7 @@ const DashboardPage: React.FC = () => {
         color: BRAND.text,
       }}
     >
-      {/* Decorative blobs (same as login) */}
+      {/* Decorative blobs */}
       <div
         style={{
           pointerEvents: 'none',
@@ -429,36 +421,26 @@ const DashboardPage: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              {/* NEW: Community nav button */}
-              <button
-                type="button"
-                onClick={() => navigate('/community')}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 999,
-                  border: `1px solid ${BRAND.border}`,
-                  background: '#ffffff',
-                  color: BRAND.text,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Community
-              </button>
+          {/* Community nav button */}
+          <button
+            type="button"
+            onClick={() => navigate('/community')}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 999,
+              border: `1px solid ${BRAND.border}`,
+              background: '#ffffff',
+              color: BRAND.text,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Community
+          </button>
 
-    <span style={{ fontSize: 12, color: '#94a8a5' }}>{status}</span>
-    <button
-      type="button"
-      onClick={() => setShowUserPanel(true)}
-      aria-label="Open account panel"
-      /* existing styles and handlers */
-    >
-      {/* avatar */}
-    </button>
-  </div>
           <span style={{ fontSize: 12, color: '#94a8a5' }}>{status}</span>
+
           <button
             type="button"
             onClick={() => setShowUserPanel(true)}
@@ -871,390 +853,28 @@ const DashboardPage: React.FC = () => {
               })}
             </div>
 
-            {/* Friends section */}
-            <div
-              style={{
-                flex: 1,
-                overflowY: 'auto',
-                paddingRight: 4,
+            {/* Friends section now uses FriendsPanel */}
+            <FriendsPanel
+              BRAND={{
+                border: BRAND.border,
+                text: BRAND.text,
+                muted: BRAND.muted,
+                brandGradient: BRAND.brandGradient,
               }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 8,
-                  cursor: 'pointer',
-                }}
-                onClick={() => setFriendsListOpen((v) => !v)}
-              >
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: BRAND.text,
-                  }}
-                >
-                  Friends & requests
-                </div>
-                <span
-                  style={{
-                    fontSize: 18,
-                    lineHeight: 1,
-                    transform: friendsListOpen
-                      ? 'rotate(90deg)'
-                      : 'rotate(0deg)',
-                    transition: 'transform 0.15s ease',
-                    color: BRAND.muted,
-                  }}
-                >
-                  ›
-                </span>
-              </div>
-
-              {friendsListOpen && (
-                <div
-                  style={{
-                    borderRadius: 12,
-                    border: `1px solid ${BRAND.border}`,
-                    padding: 10,
-                    background: '#f5faf8',
-                  }}
-                >
-                  {/* Search */}
-                  <form onSubmit={handleSearchFriends}>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by name or @username"
-                      style={{
-                        width: '100%',
-                        padding: '8px 10px',
-                        borderRadius: 8,
-                        border: `1px solid ${BRAND.border}`,
-                        fontSize: 13,
-                        marginBottom: 6,
-                      }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={searchLoading || !searchQuery.trim()}
-                      style={{
-                        width: '100%',
-                        padding: '6px 10px',
-                        borderRadius: 8,
-                        border: 'none',
-                        background: BRAND.brandGradient,
-                        color: '#fff',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor:
-                          searchLoading || !searchQuery.trim()
-                            ? 'default'
-                            : 'pointer',
-                        opacity:
-                          searchLoading || !searchQuery.trim() ? 0.7 : 1,
-                        marginBottom: 8,
-                      }}
-                    >
-                      {searchLoading ? 'Searching…' : 'Search'}
-                    </button>
-                  </form>
-
-                  {searchError && (
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: '#b00020',
-                        marginBottom: 6,
-                      }}
-                    >
-                      {searchError}
-                    </div>
-                  )}
-
-                  {/* Search results */}
-                  {searchResults.length > 0 && (
-                    <div
-                      style={{
-                        marginBottom: 8,
-                        borderBottom: `1px solid ${BRAND.border}`,
-                        paddingBottom: 6,
-                        maxHeight: 120,
-                        overflowY: 'auto',
-                      }}
-                    >
-                      {searchResults.map((u) => (
-                        <div
-                          key={u.id}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            fontSize: 13,
-                            padding: '4px 0',
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontWeight: 600 }}>
-                              {u.full_name ?? 'Unnamed'}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 11,
-                                color: BRAND.muted,
-                              }}
-                            >
-                              {u.username ? `@${u.username}` : 'No username'}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleSendFriendRequest(u.id)
-                            }
-                            style={{
-                              border: 'none',
-                              borderRadius: 999,
-                              padding: '4px 10px',
-                              fontSize: 12,
-                              fontWeight: 600,
-                              background:
-                                'linear-gradient(135deg,#1f5f63,#7cc2b5)',
-                              color: '#fff',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Add
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {friendsError && (
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: '#b00020',
-                        marginBottom: 6,
-                      }}
-                    >
-                      {friendsError}
-                    </div>
-                  )}
-
-                  {/* Friends overview */}
-                  {friendsLoading ? (
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: BRAND.muted,
-                      }}
-                    >
-                      Loading friends…
-                    </div>
-                  ) : friendsData ? (
-                    <div style={{ fontSize: 13 }}>
-                      {/* Incoming */}
-                      <div style={{ marginBottom: 6 }}>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: BRAND.muted,
-                            marginBottom: 2,
-                          }}
-                        >
-                          Incoming requests
-                        </div>
-                        {friendsData.incoming_requests.length === 0 ? (
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: '#8aa19f',
-                            }}
-                          >
-                            None
-                          </div>
-                        ) : (
-                          friendsData.incoming_requests.map((u) => (
-                            <div
-                              key={u.id}
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '3px 0',
-                              }}
-                            >
-                              <div>
-                                <div style={{ fontWeight: 600 }}>
-                                  {u.full_name ?? 'Unnamed'}
-                                </div>
-                                <div
-                                  style={{
-                                    fontSize: 11,
-                                    color: BRAND.muted,
-                                  }}
-                                >
-                                  {u.username
-                                    ? `@${u.username}`
-                                    : 'No username'}
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleAcceptFriend(u.id)}
-                                style={{
-                                  border: 'none',
-                                  borderRadius: 999,
-                                  padding: '3px 8px',
-                                  fontSize: 12,
-                                  fontWeight: 600,
-                                  background: '#16a34a',
-                                  color: '#fff',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                Accept
-                              </button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-
-                      {/* Outgoing */}
-                      <div style={{ marginBottom: 6 }}>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: BRAND.muted,
-                            marginBottom: 2,
-                          }}
-                        >
-                          Sent requests
-                        </div>
-                        {friendsData.outgoing_requests.length === 0 ? (
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: '#8aa19f',
-                            }}
-                          >
-                            None
-                          </div>
-                        ) : (
-                          friendsData.outgoing_requests.map((u) => (
-                            <div
-                              key={u.id}
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '3px 0',
-                              }}
-                            >
-                              <div>
-                                <div style={{ fontWeight: 600 }}>
-                                  {u.full_name ?? 'Unnamed'}
-                                </div>
-                                <div
-                                  style={{
-                                    fontSize: 11,
-                                    color: BRAND.muted,
-                                  }}
-                                >
-                                  {u.username
-                                    ? `@${u.username}`
-                                    : 'No username'}
-                                </div>
-                              </div>
-                              <span
-                                style={{
-                                  fontSize: 11,
-                                  color: '#8aa19f',
-                                }}
-                              >
-                                Pending
-                              </span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-
-                      {/* Friends */}
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: BRAND.muted,
-                            marginBottom: 2,
-                          }}
-                        >
-                          Friends
-                        </div>
-                        {friendsData.friends.length === 0 ? (
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: '#8aa19f',
-                            }}
-                          >
-                            You have no friends yet.
-                          </div>
-                        ) : (
-                          <div
-                            style={{
-                              maxHeight: 140,
-                              overflowY: 'auto',
-                            }}
-                          >
-                            {friendsData.friends.map((u) => (
-                              <div
-                                key={u.id}
-                                style={{
-                                  padding: '3px 0',
-                                  borderBottom:
-                                    '1px solid rgba(31,95,99,0.06)',
-                                }}
-                              >
-                                <div style={{ fontWeight: 600 }}>
-                                  {u.full_name ?? 'Unnamed'}
-                                </div>
-                                <div
-                                  style={{
-                                    fontSize: 11,
-                                    color: BRAND.muted,
-                                  }}
-                                >
-                                  {u.username
-                                    ? `@${u.username}`
-                                    : 'No username'}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: '#8aa19f',
-                      }}
-                    >
-                      No friends loaded yet.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+              friendsData={friendsData}
+              friendsLoading={friendsLoading}
+              friendsError={friendsError}
+              friendsListOpen={friendsListOpen}
+              setFriendsListOpen={setFriendsListOpen}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              searchResults={searchResults}
+              searchLoading={searchLoading}
+              searchError={searchError}
+              onSearchSubmit={handleSearchFriends}
+              onSendFriendRequest={handleSendFriendRequest}
+              onAcceptFriend={handleAcceptFriend}
+            />
 
             <button
               type="button"
