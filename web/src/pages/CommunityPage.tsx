@@ -5,6 +5,7 @@ import { BRAND } from './DashboardPage';
 import CreateActivityWidget from '../components/CreateActivityWidget';
 import ActivityCard from '../components/ActivityCard';
 import ActivityModal from '../components/ActivityModal';
+import ActivityChatModal from '../components/ActivityChatModal';
 import { supabase } from '../supabaseClient';
 
 const backendUrl =
@@ -60,6 +61,10 @@ const CommunityPage: React.FC = () => {
   const [confirmLeaveForId, setConfirmLeaveForId] = React.useState<
     string | null
   >(null);
+
+  // Activity chat modal state (for "Your activities")
+  const [chatActivity, setChatActivity] =
+    React.useState<CommunityActivity | null>(null);
 
   function handleBackToDashboard() {
     navigate('/dashboard');
@@ -745,6 +750,12 @@ const CommunityPage: React.FC = () => {
                       activity={activity}
                       mode="mine"
                       onLeave={handleRequestLeave}
+                      onOpenChat={(id) => {
+                        const found = myActivities.find((a) => a.id === id);
+                        if (found) {
+                          setChatActivity(found);
+                        }
+                      }}
                     />
                   ))}
                 </div>
@@ -920,6 +931,15 @@ const CommunityPage: React.FC = () => {
             if (!joinLoading) setSelectedActivity(null);
           }}
           onConfirmJoin={() => handleConfirmJoin(selectedActivity.id)}
+        />
+      )}
+
+      {/* Activity chat modal */}
+      {chatActivity && (
+        <ActivityChatModal
+          activity={chatActivity}
+          open={!!chatActivity}
+          onClose={() => setChatActivity(null)}
         />
       )}
 

@@ -8,6 +8,8 @@ interface ActivityCardProps {
   mode: 'public' | 'mine';
   onViewJoin?: (id: string) => void;
   onLeave?: (id: string) => void;
+  // NEW: open chat for this activity (used in "Your activities")
+  onOpenChat?: (id: string) => void;
 }
 
 const ActivityCard: React.FC<ActivityCardProps> = ({
@@ -15,6 +17,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   mode,
   onViewJoin,
   onLeave,
+  onOpenChat,
 }) => {
   const hasParticipants = activity.participantsCount > 0;
 
@@ -167,6 +170,29 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           >
             Created / joined
           </span>
+
+          {/* NEW: Open chat button, only if handler provided */}
+          {onOpenChat && (
+            <button
+              type="button"
+              onClick={() => onOpenChat(activity.id)}
+              style={{
+                marginTop: 2,
+                border: 'none',
+                borderRadius: 999,
+                padding: '4px 8px',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: '#0f766e',
+                color: '#ffffff',
+                boxShadow: BRAND.softShadow,
+              }}
+            >
+              Open chat
+            </button>
+          )}
+
           {onLeave && (
             <button
               type="button"

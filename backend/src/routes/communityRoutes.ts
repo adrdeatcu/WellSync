@@ -6,6 +6,8 @@ import {
   getMyActivities,
   postJoinActivity,
   postLeaveActivity,
+  getActivityMessages,
+  postActivityMessage,
 } from '../controllers/communityController.js';
 
 const router = Router();
@@ -17,5 +19,9 @@ router.get('/activities', getActivities);
 router.get('/activities/mine', getMyActivities);
 router.post('/activities/:id/join', postJoinActivity);
 router.post('/activities/:id/leave', postLeaveActivity);
+
+// Activity messages routes
+router.get('/activities/:id/messages', getActivityMessages);
+router.post('/activities/:id/messages', postActivityMessage);
 
 export default router;

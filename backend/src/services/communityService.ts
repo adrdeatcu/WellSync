@@ -87,7 +87,7 @@ export async function createActivity(
 }
 
 export interface ListActivitiesOptions {
-  userId: string;                  // current user id
+  userId: string;                   // current user id
   city?: string | undefined;
   fromTimeUtc?: string | undefined; // ISO string
 }
@@ -405,4 +405,133 @@ export async function leaveActivity(
   if (error) {
     throw error;
   }
+}
+
+// Activity messages (chat)
+
+export interface ActivityMessage {
+  id: number;
+  activity_id: string;
+  sender_user_id: string;
+  content: string;
+  created_at: string;
+}
+
+/**
+ * Ensures the user is a member of the activity.
+ */
+async function assertUserIsActivityMember(
+  userId: string,
+  activityId: string
+): Promise<void> {
+  const { data, error } = await supabaseAdmin
+    .from('community_activity_members')
+    .select('activity_id')
+    .eq('activity_id', activityId)
+    .eq('user_id', userId)
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    const err = new Error('User is not a member of this activity');
+    (err as any).code = 'NOT_MEMBER';
+    throw err;
+  }
+}
+
+/**
+ * List messages for an activity, only if user is a member.
+ */
+export async function listActivityMessages(
+  userId: string,
+  activityId: string
+): Promise<ActivityMessage[]> {
+  // Ensure the user is part of this activity
+  await assertUserIsActivityMember(userId, activityId);
+
+  const { data, error } = await supabaseAdmin
+    .from('community_activity_messages')
+    .select(
+      `
+      id,
+      activity_id,
+      sender_user_id,
+      content,
+      created_at
+      `
+    )
+    .eq('activity_id', activityId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const rows = (data ?? []) as any[];
+
+  const messages: ActivityMessage[] = rows.map((row) => ({
+    id: row.id as number,
+    activity_id: row.activity_id as string,
+    sender_user_id: row.sender_user_id as string,
+    content: row.content as string,
+    created_at: row.created_at as string,
+  }));
+
+  return messages;
+}
+
+/**
+ * Post a message to an activity, only if user is a member.
+ */
+export async function createActivityMessage(
+  userId: string,
+  activityId: string,
+  content: string
+): Promise<ActivityMessage> {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    const err = new Error('Message content cannot be empty');
+    (err as any).code = 'EMPTY_MESSAGE';
+    throw err;
+  }
+
+  // Ensure the user is part of this activity
+  await assertUserIsActivityMember(userId, activityId);
+
+  const { data, error } = await supabaseAdmin
+    .from('community_activity_messages')
+    .insert({
+      activity_id: activityId,
+      sender_user_id: userId,
+      content: trimmed,
+    })
+    .select(
+      `
+      id,
+      activity_id,
+      sender_user_id,
+      content,
+      created_at
+      `
+    )
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const row = data as any;
+
+  const message: ActivityMessage = {
+    id: row.id as number,
+    activity_id: row.activity_id as string,
+    sender_user_id: row.sender_user_id as string,
+    content: row.content as string,
+    created_at: row.created_at as string,
+  };
+
+  return message;
 }
