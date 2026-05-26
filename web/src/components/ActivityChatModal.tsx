@@ -13,6 +13,7 @@ export interface ActivityMessage {
   sender_user_id: string;
   content: string;
   created_at: string;
+  sender_name: string | null;
 }
 
 interface ActivityChatModalProps {
@@ -284,8 +285,7 @@ const ActivityChatModal: React.FC<ActivityChatModalProps> = ({
                     color: '#1f5f63',
                   }}
                 >
-                  {/* For now we show a generic label; later you can map sender_user_id to a name */}
-                  Participant
+                  {m.sender_name ?? 'Participant'}
                   <span
                     style={{
                       fontWeight: 400,
@@ -335,7 +335,7 @@ const ActivityChatModal: React.FC<ActivityChatModalProps> = ({
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder='Write a message...'
+              placeholder="Write a message..."
               style={{
                 flex: 1,
                 padding: '8px 10px',

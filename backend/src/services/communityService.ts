@@ -415,6 +415,7 @@ export interface ActivityMessage {
   sender_user_id: string;
   content: string;
   created_at: string;
+  sender_name: string | null;
 }
 
 /**
@@ -440,6 +441,66 @@ async function assertUserIsActivityMember(
     (err as any).code = 'NOT_MEMBER';
     throw err;
   }
+}
+
+/**
+ * Helper to load profile names for a batch of user ids.
+ * Returns a map: userId -> { full_name, username }.
+ */
+async function loadProfileNames(
+  userIds: string[]
+): Promise<Map<string, { full_name: string | null; username: string | null }>> {
+  const result = new Map<
+    string,
+    { full_name: string | null; username: string | null }
+  >();
+
+  if (userIds.length === 0) {
+    return result;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, username')
+    .in('id', userIds);
+
+  if (error) {
+    // Do not break chat if profile query fails; just log and return empty names
+    console.error('loadProfileNames error', error);
+    return result;
+  }
+
+  for (const row of data ?? []) {
+    const r = row as any;
+    result.set(r.id as string, {
+      full_name: (r.full_name as string | null) ?? null,
+      username: (r.username as string | null) ?? null,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Builds a display name like "Full Name (@username)" when possible.
+ */
+function buildDisplayName(profile: {
+  full_name: string | null;
+  username: string | null;
+} | null): string | null {
+  const full = profile?.full_name?.trim() || '';
+  const user = profile?.username?.trim() || '';
+
+  if (full && user) {
+    return `${full} (@${user})`;
+  }
+  if (full) {
+    return full;
+  }
+  if (user) {
+    return `@${user}`;
+  }
+  return null;
 }
 
 /**
@@ -472,13 +533,28 @@ export async function listActivityMessages(
 
   const rows = (data ?? []) as any[];
 
-  const messages: ActivityMessage[] = rows.map((row) => ({
-    id: row.id as number,
-    activity_id: row.activity_id as string,
-    sender_user_id: row.sender_user_id as string,
-    content: row.content as string,
-    created_at: row.created_at as string,
-  }));
+  // Collect unique sender ids and load their names
+  const senderIds = Array.from(
+    new Set(rows.map((row) => row.sender_user_id as string))
+  );
+
+  const profilesById = await loadProfileNames(senderIds);
+
+  const messages: ActivityMessage[] = rows.map((row) => {
+    const senderId = row.sender_user_id as string;
+    const profile = profilesById.get(senderId) ?? null;
+
+    const sender_name = buildDisplayName(profile);
+
+    return {
+      id: row.id as number,
+      activity_id: row.activity_id as string,
+      sender_user_id: senderId,
+      content: row.content as string,
+      created_at: row.created_at as string,
+      sender_name,
+    };
+  });
 
   return messages;
 }
@@ -525,12 +601,19 @@ export async function createActivityMessage(
 
   const row = data as any;
 
+  // Load profile once for this sender to get their name
+  const profilesById = await loadProfileNames([userId]);
+  const profile = profilesById.get(userId) ?? null;
+
+  const sender_name = buildDisplayName(profile);
+
   const message: ActivityMessage = {
     id: row.id as number,
     activity_id: row.activity_id as string,
     sender_user_id: row.sender_user_id as string,
     content: row.content as string,
     created_at: row.created_at as string,
+    sender_name,
   };
 
   return message;
