@@ -3,6 +3,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BRAND } from './DashboardPage';
 import CreateActivityWidget from '../components/CreateActivityWidget';
+import ActivityCard from '../components/ActivityCard';
+import ActivityModal from '../components/ActivityModal';
+import { supabase } from '../supabaseClient';
+
+const backendUrl =
+  process.env.REACT_APP_BACKEND_URL ?? 'http://localhost:4000';
 
 export interface CommunityActivity {
   id: string;
@@ -12,60 +18,264 @@ export interface CommunityActivity {
   creatorName: string;
   participantsCount: number;
   isFriendHost: boolean;
-  scheduledFor: string; // simple text for display
+  scheduledFor: string;
   city?: string;
   locationDetails?: string;
 }
 
-const mockActivities: CommunityActivity[] = [
-  {
-    id: '1',
-    title: 'Evening 5k Walk',
-    description: 'Gentle walk around the park, all paces welcome.',
-    type: 'walk',
-    creatorName: 'Alex M.',
-    participantsCount: 8,
-    isFriendHost: true,
-    scheduledFor: 'Today · 18:00',
-  },
-  {
-    id: '2',
-    title: '10,000 Steps Daily Challenge',
-    description: 'Hit 10k steps every day this week.',
-    type: 'steps',
-    creatorName: 'WellSync Community',
-    participantsCount: 42,
-    isFriendHost: false,
-    scheduledFor: 'This week',
-  },
-  {
-    id: '3',
-    title: 'Morning Run Club',
-    description: 'Short 3k run with light stretching afterwards.',
-    type: 'run',
-    creatorName: 'Dana K.',
-    participantsCount: 15,
-    isFriendHost: false,
-    scheduledFor: 'Tomorrow · 07:30',
-  },
-];
-
 const CommunityPage: React.FC = () => {
   const navigate = useNavigate();
 
+  // "Your activities"
   const [myActivities, setMyActivities] = React.useState<CommunityActivity[]>(
     []
   );
+  const [myActivitiesLoading, setMyActivitiesLoading] = React.useState(false);
+  const [myActivitiesError, setMyActivitiesError] =
+    React.useState<string | null>(null);
+
+  // Public activities
+  const [allPublicActivities, setAllPublicActivities] = React.useState<
+    CommunityActivity[]
+  >([]);
+  const [publicActivities, setPublicActivities] = React.useState<
+    CommunityActivity[]
+  >([]);
+  const [publicLoading, setPublicLoading] = React.useState(false);
+  const [publicError, setPublicError] = React.useState<string | null>(null);
+
+  // City filter (client-side, partial, case-insensitive)
+  const [cityFilter, setCityFilter] = React.useState<string>('');
+
+  // View / Join modal state (for public activities)
+  const [selectedActivity, setSelectedActivity] =
+    React.useState<CommunityActivity | null>(null);
+  const [joinLoading, setJoinLoading] = React.useState(false);
+  const [joinError, setJoinError] = React.useState<string | null>(null);
+
+  // Confirm-leave modal state
+  const [confirmLeaveForId, setConfirmLeaveForId] = React.useState<
+    string | null
+  >(null);
 
   function handleBackToDashboard() {
     navigate('/dashboard');
   }
 
-  function handleJoin(activityId: string) {
-    console.log('Join activity', activityId);
+  function handleOpenJoinModal(activityId: string) {
+    const found = publicActivities.find((a) => a.id === activityId);
+
+    if (!found) {
+      console.warn('Activity not found in public list', activityId);
+      return;
+    }
+
+    setSelectedActivity(found);
+    setJoinError(null);
   }
 
-  function handleCreateActivity(newActivity: {
+  // Load all public activities once
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadPublicActivities() {
+      setPublicLoading(true);
+      setPublicError(null);
+
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        console.error('Not logged in or cannot get session', sessionError);
+        setPublicError('You must be logged in to view activities.');
+        setPublicLoading(false);
+        return;
+      }
+
+      const accessToken = sessionData.session.access_token;
+
+      try {
+        const res = await fetch(`${backendUrl}/api/activities`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => null);
+          const msg = errJson?.error ?? 'Failed to load activities.';
+          console.error('Load public activities failed', msg);
+          if (!cancelled) {
+            setPublicError(msg);
+          }
+          return;
+        }
+
+        const json = await res.json();
+        const activities = (json.activities ?? []) as {
+          id: string;
+          creator_user_id: string;
+          title: string;
+          description: string | null;
+          city: string;
+          location_details: string | null;
+          start_time_utc: string;
+          end_time_utc: string;
+          is_public: boolean;
+          created_at: string;
+          participants_count: number;
+        }[];
+
+        if (cancelled) return;
+
+        const mapped: CommunityActivity[] = activities.map((a) => {
+          const whenLabel =
+            'Starts • ' + new Date(a.start_time_utc).toLocaleString();
+
+          return {
+            id: a.id,
+            title: a.title,
+            description: a.description ?? 'No description provided.',
+            type: 'walk',
+            creatorName: 'Host',
+            participantsCount: a.participants_count ?? 0,
+            isFriendHost: false,
+            scheduledFor: whenLabel,
+            city: a.city,
+            locationDetails: a.location_details ?? undefined,
+          };
+        });
+
+        setAllPublicActivities(mapped);
+        setPublicActivities(mapped);
+      } catch (err) {
+        console.error('Unexpected error loading public activities', err);
+        if (!cancelled) {
+          setPublicError('Unexpected error loading activities.');
+        }
+      } finally {
+        if (!cancelled) {
+          setPublicLoading(false);
+        }
+      }
+    }
+
+    loadPublicActivities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Apply city filter (partial, case-insensitive)
+  React.useEffect(() => {
+    const q = cityFilter.trim().toLowerCase();
+    if (!q) {
+      setPublicActivities(allPublicActivities);
+      return;
+    }
+
+    const filtered = allPublicActivities.filter((activity) => {
+      const cityName = (activity.city ?? '').toLowerCase();
+      return cityName.includes(q);
+    });
+
+    setPublicActivities(filtered);
+  }, [cityFilter, allPublicActivities]);
+
+  // Load "Your activities"
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadMyActivities() {
+      setMyActivitiesLoading(true);
+      setMyActivitiesError(null);
+
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        console.error('Not logged in or cannot get session', sessionError);
+        setMyActivitiesError('You must be logged in to view your activities.');
+        setMyActivitiesLoading(false);
+        return;
+      }
+
+      const accessToken = sessionData.session.access_token;
+
+      try {
+        const res = await fetch(`${backendUrl}/api/activities/mine`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => null);
+          const msg = errJson?.error ?? 'Failed to load your activities.';
+          console.error('Load my activities failed', msg);
+          if (!cancelled) {
+            setMyActivitiesError(msg);
+          }
+          return;
+        }
+
+        const json = await res.json();
+        const activities = (json.activities ?? []) as {
+          id: string;
+          creator_user_id: string;
+          title: string;
+          description: string | null;
+          city: string;
+          location_details: string | null;
+          start_time_utc: string;
+          end_time_utc: string;
+          is_public: boolean;
+          created_at: string;
+          participants_count: number;
+        }[];
+
+        if (cancelled) return;
+
+        const mapped: CommunityActivity[] = activities.map((a) => {
+          const whenLabel =
+            'Starts • ' + new Date(a.start_time_utc).toLocaleString();
+
+          return {
+            id: a.id,
+            title: a.title,
+            description: a.description ?? 'No description provided.',
+            type: 'walk',
+            creatorName: 'You',
+            participantsCount: a.participants_count ?? 0,
+            isFriendHost: false,
+            scheduledFor: whenLabel,
+            city: a.city,
+            locationDetails: a.location_details ?? undefined,
+          };
+        });
+
+        setMyActivities(mapped);
+      } catch (err) {
+        console.error('Unexpected error loading my activities', err);
+        if (!cancelled) {
+          setMyActivitiesError('Unexpected error loading your activities.');
+        }
+      } finally {
+        if (!cancelled) {
+          setMyActivitiesLoading(false);
+        }
+      }
+    }
+
+    loadMyActivities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleCreateActivity(newActivity: {
     title: string;
     description: string;
     type: CommunityActivity['type'];
@@ -75,28 +285,234 @@ const CommunityPage: React.FC = () => {
     endTime: string;
     isPublic: boolean;
   }) {
-    const whenLabel =
-      newActivity.startTime && newActivity.endTime
-        ? 'Planned • ' + newActivity.startTime.replace('T', ' ')
-        : 'Soon';
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      console.error('Not logged in or cannot get session', sessionError);
+      alert('You must be logged in to create an activity.');
+      return;
+    }
+    const accessToken = sessionData.session.access_token;
 
-    const activity: CommunityActivity = {
-      id: Date.now().toString(),
+    const startLocal = new Date(newActivity.startTime);
+    const endLocal = new Date(newActivity.endTime);
+
+    if (isNaN(startLocal.getTime()) || isNaN(endLocal.getTime())) {
+      alert('Please provide valid start and end times.');
+      return;
+    }
+
+    if (endLocal <= startLocal) {
+      alert('End time must be after start time.');
+      return;
+    }
+
+    const startUtcIso = startLocal.toISOString();
+    const endUtcIso = endLocal.toISOString();
+
+    const body = {
       title: newActivity.title.trim(),
-      description:
-        newActivity.description.trim() || 'No description provided.',
-      type: newActivity.type,
-      creatorName: 'You',
-      participantsCount: 1,
-      isFriendHost: false,
-      scheduledFor: whenLabel,
+      description: newActivity.description.trim() || null,
       city: newActivity.city.trim(),
-      locationDetails: newActivity.locationDetails.trim() || undefined,
+      location_details: newActivity.locationDetails.trim() || null,
+      start_time_utc: startUtcIso,
+      end_time_utc: endUtcIso,
+      is_public: newActivity.isPublic,
     };
 
-    setMyActivities((prev) => [activity, ...prev]);
-    console.log('Prepared activity payload (for backend later):', newActivity);
+    try {
+      const res = await fetch(`${backendUrl}/api/activities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        const msg = errJson?.error ?? 'Failed to create activity.';
+        console.error('Create activity failed', msg);
+        alert(msg);
+        return;
+      }
+
+      const json = await res.json();
+      const created = json.activity as {
+        id: string;
+        title: string;
+        description: string | null;
+        city: string;
+        location_details: string | null;
+        start_time_utc: string;
+        end_time_utc: string;
+        is_public: boolean;
+        created_at: string;
+        participants_count?: number;
+      };
+
+      const whenLabel =
+        newActivity.startTime && newActivity.endTime
+          ? 'Planned • ' + newActivity.startTime.replace('T', ' ')
+          : 'Soon';
+
+      const activity: CommunityActivity = {
+        id: created.id,
+        title: created.title,
+        description: created.description ?? 'No description provided.',
+        type: newActivity.type,
+        creatorName: 'You',
+        participantsCount: created.participants_count ?? 1,
+        isFriendHost: false,
+        scheduledFor: whenLabel,
+        city: created.city,
+        locationDetails: created.location_details ?? undefined,
+      };
+
+      setMyActivities((prev) => [activity, ...prev]);
+      setAllPublicActivities((prev) => [activity, ...prev]);
+    } catch (err) {
+      console.error('Unexpected error creating activity', err);
+      alert('Unexpected error creating activity. Please try again.');
+    }
   }
+
+  async function handleConfirmJoin(activityId: string) {
+    if (!selectedActivity) return;
+
+    setJoinLoading(true);
+    setJoinError(null);
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      console.error('Not logged in or cannot get session', sessionError);
+      setJoinError('You must be logged in to join activities.');
+      setJoinLoading(false);
+      return;
+    }
+
+    const accessToken = sessionData.session.access_token;
+
+    try {
+      const res = await fetch(
+        `${backendUrl}/api/activities/${activityId}/join`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        const msg = errJson?.error ?? 'Failed to join activity.';
+        console.error('Join activity failed', msg);
+        setJoinError(msg);
+        setJoinLoading(false);
+        return;
+      }
+
+      // Add to "Your activities" if not already there
+      setMyActivities((prev) => {
+        const exists = prev.some((a) => a.id === activityId);
+        if (exists) {
+          return prev;
+        }
+        return [selectedActivity, ...prev];
+      });
+
+      // Remove from public lists so it no longer shows there
+      setAllPublicActivities((prev) =>
+        prev.filter((a) => a.id !== activityId)
+      );
+      setPublicActivities((prev) =>
+        prev.filter((a) => a.id !== activityId)
+      );
+
+      setJoinLoading(false);
+      setSelectedActivity(null);
+    } catch (err) {
+      console.error('Unexpected error joining activity', err);
+      setJoinError('Unexpected error joining activity. Please try again.');
+      setJoinLoading(false);
+    }
+  }
+
+  async function handleConfirmLeave(activityId: string) {
+    setJoinLoading(true);
+    setJoinError(null);
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      console.error('Not logged in or cannot get session', sessionError);
+      setJoinError('You must be logged in to leave activities.');
+      setJoinLoading(false);
+      return;
+    }
+
+    const accessToken = sessionData.session.access_token;
+
+    try {
+      const res = await fetch(
+        `${backendUrl}/api/activities/${activityId}/leave`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        const msg = errJson?.error ?? 'Failed to leave activity.';
+        console.error('Leave activity failed', msg);
+        setJoinError(msg);
+        setJoinLoading(false);
+        return;
+      }
+
+      const leftActivity = myActivities.find((a) => a.id === activityId);
+
+      // Remove from "Your activities"
+      setMyActivities((prev) => prev.filter((a) => a.id !== activityId));
+
+      if (leftActivity) {
+        // Add back into public lists if not present
+        setAllPublicActivities((prev) => {
+          const exists = prev.some((a) => a.id === activityId);
+          if (exists) return prev;
+          return [leftActivity, ...prev];
+        });
+
+        setPublicActivities((prev) => {
+          const exists = prev.some((a) => a.id === activityId);
+          if (exists) return prev;
+          return [leftActivity, ...prev];
+        });
+      }
+
+      setJoinLoading(false);
+      setConfirmLeaveForId(null);
+    } catch (err) {
+      console.error('Unexpected error leaving activity', err);
+      setJoinError('Unexpected error leaving activity. Please try again.');
+      setJoinLoading(false);
+    }
+  }
+
+  // Trigger confirm modal when clicking Leave on a card
+  function handleRequestLeave(activityId: string) {
+    setConfirmLeaveForId(activityId);
+  }
+
+  const activityToConfirmLeave =
+    confirmLeaveForId &&
+    myActivities.find((a) => a.id === confirmLeaveForId);
 
   return (
     <div
@@ -232,7 +648,9 @@ const CommunityPage: React.FC = () => {
         </section>
 
         {/* Your activities */}
-        {myActivities.length > 0 && (
+        {(myActivities.length > 0 ||
+          myActivitiesLoading ||
+          myActivitiesError) && (
           <section
             style={{
               borderRadius: 20,
@@ -254,137 +672,70 @@ const CommunityPage: React.FC = () => {
             >
               Your activities
             </h3>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-              }}
-            >
-              {myActivities.map((activity) => (
-                <div
-                  key={activity.id}
+
+            {myActivitiesLoading && (
+              <p
+                style={{
+                  fontSize: 12,
+                  color: BRAND.muted,
+                  margin: '4px 0 0',
+                }}
+              >
+                Loading your activities...
+              </p>
+            )}
+
+            {myActivitiesError && (
+              <p
+                style={{
+                  fontSize: 12,
+                  color: '#b00020',
+                  margin: '4px 0 0',
+                }}
+              >
+                {myActivitiesError}
+              </p>
+            )}
+
+            {!myActivitiesLoading &&
+              !myActivitiesError &&
+              myActivities.length === 0 && (
+                <p
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    padding: 12,
-                    borderRadius: 14,
-                    border: `1px solid ${BRAND.border}`,
-                    background: '#ffffff',
+                    fontSize: 12,
+                    color: BRAND.muted,
+                    margin: '4px 0 0',
                   }}
                 >
-                  <div style={{ flex: 1, marginRight: 10 }}>
-                    {/* Title + type */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        marginBottom: 2,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: BRAND.text,
-                        }}
-                      >
-                        {activity.title}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          padding: '2px 8px',
-                          borderRadius: 999,
-                          background: '#e3f2ef',
-                          color: BRAND.primary,
-                          textTransform: 'capitalize',
-                        }}
-                      >
-                        {activity.type}
-                      </span>
-                    </div>
+                  You have no activities yet.
+                </p>
+              )}
 
-                    {/* City highlighted just under title */}
-                    {activity.city && (
-                      <div
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          marginBottom: 4,
-                          padding: '2px 8px',
-                          borderRadius: 999,
-                          background: '#dbeafe',
-                          fontSize: 11,
-                          color: '#1d4ed8',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 12,
-                          }}
-                        >
-                          📍
-                        </span>
-                        <span>{activity.city}</span>
-                      </div>
-                    )}
-
-                    {/* Description */}
-                    <p
-                      style={{
-                        margin: '4px 0 0',
-                        fontSize: 13,
-                        color: BRAND.muted,
-                      }}
-                    >
-                      {activity.description}
-                    </p>
-
-                    {/* Location details below description */}
-                    {activity.locationDetails && (
-                      <p
-                        style={{
-                          margin: '4px 0 0',
-                          fontSize: 12,
-                          color: '#4a6e6c',
-                        }}
-                      >
-                        Details: {activity.locationDetails}
-                      </p>
-                    )}
-
-                    {/* Time */}
-                    <p
-                      style={{
-                        margin: '4px 0 0',
-                        fontSize: 11,
-                        color: '#8aa19f',
-                      }}
-                    >
-                      {activity.scheduledFor}
-                    </p>
-                  </div>
-
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: '#8aa19f',
-                      alignSelf: 'center',
-                    }}
-                  >
-                    Created by you
-                  </span>
+            {!myActivitiesLoading &&
+              !myActivitiesError &&
+              myActivities.length > 0 && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                  }}
+                >
+                  {myActivities.map((activity) => (
+                    <ActivityCard
+                      key={activity.id}
+                      activity={activity}
+                      mode="mine"
+                      onLeave={handleRequestLeave}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
           </section>
         )}
 
-        {/* Suggested activities */}
+        {/* Public activities */}
         <section
           style={{
             borderRadius: 20,
@@ -402,145 +753,247 @@ const CommunityPage: React.FC = () => {
               marginBottom: 10,
             }}
           >
+            <div>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: BRAND.text,
+                }}
+              >
+                Public activities
+              </h3>
+              <p
+                style={{
+                  margin: '4px 0 0',
+                  fontSize: 12,
+                  color: BRAND.muted,
+                }}
+              >
+                Filter by city or view all public activities.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <label
+                style={{
+                  fontSize: 12,
+                  color: BRAND.muted,
+                }}
+              >
+                City:
+              </label>
+              <input
+                type="text"
+                placeholder="All cities"
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                style={{
+                  fontSize: 12,
+                  padding: '4px 8px',
+                  borderRadius: 999,
+                  border: `1px solid ${BRAND.border}`,
+                  minWidth: 140,
+                }}
+              />
+            </div>
+          </div>
+
+          {publicLoading && (
+            <p
+              style={{
+                fontSize: 12,
+                color: BRAND.muted,
+                margin: '4px 0 0',
+              }}
+            >
+              Loading activities...
+            </p>
+          )}
+
+          {publicError && (
+            <p
+              style={{
+                fontSize: 12,
+                color: '#b00020',
+                margin: '4px 0 0',
+              }}
+            >
+              {publicError}
+            </p>
+          )}
+
+          {!publicLoading && !publicError && (
+            <div
+              style={{
+                marginTop: publicActivities.length ? 0 : 6,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}
+            >
+              {publicActivities.length === 0 ? (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: BRAND.muted,
+                    margin: 0,
+                  }}
+                >
+                  No public activities available yet.
+                </p>
+              ) : (
+                publicActivities.map((activity) => (
+                  <ActivityCard
+                    key={activity.id}
+                    activity={activity}
+                    mode="public"
+                    onViewJoin={handleOpenJoinModal}
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </section>
+      </main>
+
+      <CreateActivityWidget onCreate={handleCreateActivity} />
+
+      {selectedActivity && (
+        <ActivityModal
+          activity={selectedActivity}
+          open={!!selectedActivity}
+          joinLoading={joinLoading}
+          joinError={joinError}
+          onClose={() => {
+            if (!joinLoading) setSelectedActivity(null);
+          }}
+          onConfirmJoin={() => handleConfirmJoin(selectedActivity.id)}
+        />
+      )}
+
+      {/* Leave confirmation modal */}
+      {activityToConfirmLeave && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 40, 42, 0.35)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 60,
+          }}
+          onClick={() => {
+            if (!joinLoading) {
+              setConfirmLeaveForId(null);
+            }
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 380,
+              borderRadius: 16,
+              background: 'rgba(255,255,255,0.97)',
+              boxShadow: BRAND.cardShadow,
+              border: `1px solid ${BRAND.border}`,
+              padding: 20,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3
               style={{
                 margin: 0,
                 fontSize: 16,
                 fontWeight: 600,
                 color: BRAND.text,
+                marginBottom: 8,
               }}
             >
-              Suggested activities
+              Leave activity?
             </h3>
-            <span
+            <p
               style={{
-                fontSize: 12,
+                margin: '6px 0 0',
+                fontSize: 13,
                 color: BRAND.muted,
               }}
             >
-              {mockActivities.length} available
-            </span>
-          </div>
+              You are about to leave “{activityToConfirmLeave.title}”. You will
+              need to join again from the public list if you change your mind.
+            </p>
 
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-            }}
-          >
-            {mockActivities.map((activity) => (
-              <div
-                key={activity.id}
+            {joinError && (
+              <p
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  padding: 12,
-                  borderRadius: 14,
-                  border: `1px solid ${BRAND.border}`,
-                  background: '#ffffff',
+                  margin: '8px 0 0',
+                  fontSize: 12,
+                  color: '#b00020',
                 }}
               >
-                <div style={{ flex: 1, marginRight: 10 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      marginBottom: 4,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: BRAND.text,
-                      }}
-                    >
-                      {activity.title}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        padding: '2px 8px',
-                        borderRadius: 999,
-                        background: '#e3f2ef',
-                        color: BRAND.primary,
-                        textTransform: 'capitalize',
-                      }}
-                    >
-                      {activity.type}
-                    </span>
-                    {activity.isFriendHost && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          padding: '2px 8px',
-                          borderRadius: 999,
-                          background: '#fef3c7',
-                          color: '#92400e',
-                        }}
-                      >
-                        Friend hosting
-                      </span>
-                    )}
-                  </div>
+                {joinError}
+              </p>
+            )}
 
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 13,
-                      color: BRAND.muted,
-                    }}
-                  >
-                    {activity.description}
-                  </p>
-
-                  <div
-                    style={{
-                      marginTop: 6,
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 10,
-                      fontSize: 12,
-                      color: BRAND.muted,
-                    }}
-                  >
-                    <span>Host: {activity.creatorName}</span>
-                    <span>•</span>
-                    <span>{activity.participantsCount} joined</span>
-                    <span>•</span>
-                    <span>{activity.scheduledFor}</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleJoin(activity.id)}
-                  style={{
-                    alignSelf: 'center',
-                    border: 'none',
-                    borderRadius: 999,
-                    padding: '6px 12px',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    background: BRAND.brandGradient,
-                    color: '#ffffff',
-                    boxShadow: BRAND.softShadow,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Join
-                </button>
-              </div>
-            ))}
+            <div
+              style={{
+                marginTop: 14,
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 8,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => !joinLoading && setConfirmLeaveForId(null)}
+                style={{
+                  borderRadius: 999,
+                  border: `1px solid ${BRAND.border}`,
+                  background: '#ffffff',
+                  padding: '6px 12px',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  color: BRAND.muted,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  activityToConfirmLeave &&
+                  handleConfirmLeave(activityToConfirmLeave.id)
+                }
+                disabled={joinLoading}
+                style={{
+                  borderRadius: 999,
+                  border: 'none',
+                  background: '#b91c1c',
+                  padding: '6px 14px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: joinLoading ? 'default' : 'pointer',
+                  color: '#ffffff',
+                  boxShadow: BRAND.softShadow,
+                  opacity: joinLoading ? 0.75 : 1,
+                }}
+              >
+                {joinLoading ? 'Leaving...' : 'Leave activity'}
+              </button>
+            </div>
           </div>
-        </section>
-      </main>
-
-      <CreateActivityWidget onCreate={handleCreateActivity} />
+        </div>
+      )}
     </div>
   );
 };
