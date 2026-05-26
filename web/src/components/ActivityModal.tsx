@@ -165,6 +165,7 @@ const ActivityModal: React.FC<ActivityModalProps> = ({
           }}
         >
           Hosted by {activity.creatorName}
+          {activity.isFriendHost && ' (friend host)'}
         </p>
 
         {joinError && (

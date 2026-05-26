@@ -46,6 +46,11 @@ export async function getActivities(
   res: Response
 ) {
   try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const rawCity = req.query.city;
     const rawFrom = req.query.from;
 
@@ -53,6 +58,7 @@ export async function getActivities(
     const from = typeof rawFrom === 'string' ? rawFrom : undefined;
 
     const activities = await listPublicActivities({
+      userId,
       city,
       fromTimeUtc: from,
     });

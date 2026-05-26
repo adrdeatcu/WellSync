@@ -60,6 +60,21 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           >
             {activity.type}
           </span>
+          {activity.isFriendHost && (
+            <span
+              style={{
+                fontSize: 10,
+                padding: '2px 6px',
+                borderRadius: 999,
+                background: '#fef3c7',
+                color: '#92400e',
+                textTransform: 'uppercase',
+                fontWeight: 600,
+              }}
+            >
+              Friend host
+            </span>
+          )}
         </div>
 
         {activity.city && (

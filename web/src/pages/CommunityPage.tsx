@@ -115,6 +115,8 @@ const CommunityPage: React.FC = () => {
         const activities = (json.activities ?? []) as {
           id: string;
           creator_user_id: string;
+          creator_name: string | null;
+          is_friend_host: boolean;
           title: string;
           description: string | null;
           city: string;
@@ -136,10 +138,11 @@ const CommunityPage: React.FC = () => {
             id: a.id,
             title: a.title,
             description: a.description ?? 'No description provided.',
+            // Placeholder type until DB supports this field
             type: 'walk',
-            creatorName: 'Host',
+            creatorName: a.creator_name ?? 'Host',
             participantsCount: a.participants_count ?? 0,
-            isFriendHost: false,
+            isFriendHost: a.is_friend_host ?? false,
             scheduledFor: whenLabel,
             city: a.city,
             locationDetails: a.location_details ?? undefined,
@@ -147,7 +150,7 @@ const CommunityPage: React.FC = () => {
         });
 
         setAllPublicActivities(mapped);
-        setPublicActivities(mapped);
+        // publicActivities now derived by effect (below)
       } catch (err) {
         console.error('Unexpected error loading public activities', err);
         if (!cancelled) {
@@ -167,21 +170,25 @@ const CommunityPage: React.FC = () => {
     };
   }, []);
 
-  // Apply city filter (partial, case-insensitive)
+  // Apply city filter and hide activities already in "Your activities"
   React.useEffect(() => {
     const q = cityFilter.trim().toLowerCase();
-    if (!q) {
-      setPublicActivities(allPublicActivities);
-      return;
+
+    // ids of activities the user has created/joined
+    const myIds = new Set(myActivities.map((a) => a.id));
+
+    // start from all public, drop those already in myActivities
+    let base = allPublicActivities.filter((activity) => !myIds.has(activity.id));
+
+    if (q) {
+      base = base.filter((activity) => {
+        const cityName = (activity.city ?? '').toLowerCase();
+        return cityName.includes(q);
+      });
     }
 
-    const filtered = allPublicActivities.filter((activity) => {
-      const cityName = (activity.city ?? '').toLowerCase();
-      return cityName.includes(q);
-    });
-
-    setPublicActivities(filtered);
-  }, [cityFilter, allPublicActivities]);
+    setPublicActivities(base);
+  }, [cityFilter, allPublicActivities, myActivities]);
 
   // Load "Your activities"
   React.useEffect(() => {
@@ -246,6 +253,7 @@ const CommunityPage: React.FC = () => {
             title: a.title,
             description: a.description ?? 'No description provided.',
             type: 'walk',
+            // For "Your activities" we keep showing "You"
             creatorName: 'You',
             participantsCount: a.participants_count ?? 0,
             isFriendHost: false,
