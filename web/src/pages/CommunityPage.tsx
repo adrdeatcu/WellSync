@@ -47,6 +47,9 @@ const CommunityPage: React.FC = () => {
   // City filter (client-side, partial, case-insensitive)
   const [cityFilter, setCityFilter] = React.useState<string>('');
 
+  // Friends-only filter
+  const [friendsOnly, setFriendsOnly] = React.useState(false);
+
   // View / Join modal state (for public activities)
   const [selectedActivity, setSelectedActivity] =
     React.useState<CommunityActivity | null>(null);
@@ -170,7 +173,7 @@ const CommunityPage: React.FC = () => {
     };
   }, []);
 
-  // Apply city filter and hide activities already in "Your activities"
+  // Apply city filter, friends-only filter, and hide activities already in "Your activities"
   React.useEffect(() => {
     const q = cityFilter.trim().toLowerCase();
 
@@ -180,6 +183,12 @@ const CommunityPage: React.FC = () => {
     // start from all public, drop those already in myActivities
     let base = allPublicActivities.filter((activity) => !myIds.has(activity.id));
 
+    // if friendsOnly is on, keep only activities hosted by friends
+    if (friendsOnly) {
+      base = base.filter((activity) => activity.isFriendHost);
+    }
+
+    // city filter
     if (q) {
       base = base.filter((activity) => {
         const cityName = (activity.city ?? '').toLowerCase();
@@ -188,7 +197,7 @@ const CommunityPage: React.FC = () => {
     }
 
     setPublicActivities(base);
-  }, [cityFilter, allPublicActivities, myActivities]);
+  }, [cityFilter, friendsOnly, allPublicActivities, myActivities]);
 
   // Load "Your activities"
   React.useEffect(() => {
@@ -787,30 +796,57 @@ const CommunityPage: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 12,
               }}
             >
-              <label
+              <div
                 style={{
-                  fontSize: 12,
-                  color: BRAND.muted,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
                 }}
               >
-                City:
-              </label>
-              <input
-                type="text"
-                placeholder="All cities"
-                value={cityFilter}
-                onChange={(e) => setCityFilter(e.target.value)}
+                <label
+                  style={{
+                    fontSize: 12,
+                    color: BRAND.muted,
+                  }}
+                >
+                  City:
+                </label>
+                <input
+                  type="text"
+                  placeholder="All cities"
+                  value={cityFilter}
+                  onChange={(e) => setCityFilter(e.target.value)}
+                  style={{
+                    fontSize: 12,
+                    padding: '4px 8px',
+                    borderRadius: 999,
+                    border: `1px solid ${BRAND.border}`,
+                    minWidth: 140,
+                  }}
+                />
+              </div>
+
+              <label
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
                   fontSize: 12,
-                  padding: '4px 8px',
-                  borderRadius: 999,
-                  border: `1px solid ${BRAND.border}`,
-                  minWidth: 140,
+                  color: BRAND.muted,
+                  cursor: 'pointer',
                 }}
-              />
+              >
+                <input
+                  type="checkbox"
+                  checked={friendsOnly}
+                  onChange={(e) => setFriendsOnly(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span>Friends’ activities only</span>
+              </label>
             </div>
           </div>
 
