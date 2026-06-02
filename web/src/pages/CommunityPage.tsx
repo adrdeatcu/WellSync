@@ -6,6 +6,9 @@ import CreateActivityWidget from '../components/CreateActivityWidget';
 import ActivityCard from '../components/ActivityCard';
 import ActivityModal from '../components/ActivityModal';
 import ActivityChatModal from '../components/ActivityChatModal';
+import ActivityInviteModal, {
+  type InviteFriend,
+} from '../components/ActivityInviteModal';
 import { supabase } from '../supabaseClient';
 
 const backendUrl =
@@ -65,6 +68,15 @@ const CommunityPage: React.FC = () => {
   // Activity chat modal state (for "Your activities")
   const [chatActivity, setChatActivity] =
     React.useState<CommunityActivity | null>(null);
+
+  // Invite friends modal state
+  const [inviteActivity, setInviteActivity] =
+    React.useState<CommunityActivity | null>(null);
+  const [inviteLoading, setInviteLoading] = React.useState(false);
+  const [inviteError, setInviteError] = React.useState<string | null>(null);
+  const [friendsForInvites, setFriendsForInvites] = React.useState<
+    InviteFriend[]
+  >([]);
 
   function handleBackToDashboard() {
     navigate('/dashboard');
@@ -297,6 +309,64 @@ const CommunityPage: React.FC = () => {
     };
   }, []);
 
+  // Load friends for invitations
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadFriendsForInvites() {
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        console.error('Not logged in or cannot get session', sessionError);
+        return;
+      }
+
+      const accessToken = sessionData.session.access_token;
+
+      try {
+        const res = await fetch(`${backendUrl}/api/friends`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => null);
+          const msg = errJson?.error ?? 'Failed to load friends.';
+          console.error('Load friends for invites failed', msg);
+          return;
+        }
+
+        const json = await res.json();
+        if (cancelled) return;
+
+        const friends = (json.friends ?? []) as {
+          id: string;
+          full_name: string | null;
+          username: string | null;
+        }[];
+
+        const mapped: InviteFriend[] = friends.map((f) => ({
+          id: f.id,
+          name:
+            (f.full_name && f.full_name.trim()) ||
+            (f.username ? `@${f.username}` : 'Friend'),
+        }));
+
+        setFriendsForInvites(mapped);
+      } catch (err) {
+        console.error('Unexpected error loading friends for invites', err);
+      }
+    }
+
+    loadFriendsForInvites();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function handleCreateActivity(newActivity: {
     title: string;
     description: string;
@@ -437,7 +507,6 @@ const CommunityPage: React.FC = () => {
         return;
       }
 
-      // Add to "Your activities" if not already there
       setMyActivities((prev) => {
         const exists = prev.some((a) => a.id === activityId);
         if (exists) {
@@ -446,7 +515,6 @@ const CommunityPage: React.FC = () => {
         return [selectedActivity, ...prev];
       });
 
-      // Remove from public lists so it no longer shows there
       setAllPublicActivities((prev) =>
         prev.filter((a) => a.id !== activityId)
       );
@@ -500,11 +568,9 @@ const CommunityPage: React.FC = () => {
 
       const leftActivity = myActivities.find((a) => a.id === activityId);
 
-      // Remove from "Your activities"
       setMyActivities((prev) => prev.filter((a) => a.id !== activityId));
 
       if (leftActivity) {
-        // Add back into public lists if not present
         setAllPublicActivities((prev) => {
           const exists = prev.some((a) => a.id === activityId);
           if (exists) return prev;
@@ -527,9 +593,70 @@ const CommunityPage: React.FC = () => {
     }
   }
 
-  // Trigger confirm modal when clicking Leave on a card
   function handleRequestLeave(activityId: string) {
     setConfirmLeaveForId(activityId);
+  }
+
+  // Open invite modal
+  function handleOpenInvite(activityId: string) {
+    const found = myActivities.find((a) => a.id === activityId);
+    if (!found) {
+      console.warn('Activity not found in myActivities', activityId);
+      return;
+    }
+    setInviteActivity(found);
+    setInviteError(null);
+  }
+
+  // Send invitation
+  async function handleInviteFriend(friendId: string) {
+    if (!inviteActivity) return;
+
+    setInviteLoading(true);
+    setInviteError(null);
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      console.error('Not logged in or cannot get session', sessionError);
+      setInviteError('You must be logged in to invite friends.');
+      setInviteLoading(false);
+      return;
+    }
+
+    const accessToken = sessionData.session.access_token;
+
+    try {
+      const res = await fetch(
+        `${backendUrl}/api/activities/${inviteActivity.id}/invitations`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ invitee_user_id: friendId }),
+        }
+      );
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        const msg = errJson?.error ?? 'Failed to send invitation.';
+        console.error('Invite friend failed', msg);
+        setInviteError(msg);
+        setInviteLoading(false);
+        return;
+      }
+
+      setInviteError(null);
+      setInviteLoading(false);
+      // Optionally close modal here if you want:
+      // setInviteActivity(null);
+    } catch (err) {
+      console.error('Unexpected error inviting friend', err);
+      setInviteError('Unexpected error inviting friend. Please try again.');
+      setInviteLoading(false);
+    }
   }
 
   const activityToConfirmLeave =
@@ -756,6 +883,7 @@ const CommunityPage: React.FC = () => {
                           setChatActivity(found);
                         }
                       }}
+                      onInviteFriends={handleOpenInvite}
                     />
                   ))}
                 </div>
@@ -942,6 +1070,22 @@ const CommunityPage: React.FC = () => {
           onClose={() => setChatActivity(null)}
         />
       )}
+
+      {/* Invite friends modal */}
+      <ActivityInviteModal
+        open={!!inviteActivity}
+        activity={inviteActivity}
+        friends={friendsForInvites}
+        inviting={inviteLoading}
+        inviteError={inviteError}
+        onClose={() => {
+          if (!inviteLoading) {
+            setInviteActivity(null);
+            setInviteError(null);
+          }
+        }}
+        onInviteFriend={handleInviteFriend}
+      />
 
       {/* Leave confirmation modal */}
       {activityToConfirmLeave && (

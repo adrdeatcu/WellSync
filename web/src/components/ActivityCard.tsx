@@ -8,8 +8,10 @@ interface ActivityCardProps {
   mode: 'public' | 'mine';
   onViewJoin?: (id: string) => void;
   onLeave?: (id: string) => void;
-  // NEW: open chat for this activity (used in "Your activities")
+  // Open chat for this activity (used in "Your activities")
   onOpenChat?: (id: string) => void;
+  // NEW: open invite friends modal
+  onInviteFriends?: (id: string) => void;
 }
 
 const ActivityCard: React.FC<ActivityCardProps> = ({
@@ -18,6 +20,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   onViewJoin,
   onLeave,
   onOpenChat,
+  onInviteFriends,
 }) => {
   const hasParticipants = activity.participantsCount > 0;
 
@@ -171,7 +174,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             Created / joined
           </span>
 
-          {/* NEW: Open chat button, only if handler provided */}
           {onOpenChat && (
             <button
               type="button"
@@ -190,6 +192,28 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
               }}
             >
               Open chat
+            </button>
+          )}
+
+          {/* NEW: Invite friends */}
+          {onInviteFriends && (
+            <button
+              type="button"
+              onClick={() => onInviteFriends(activity.id)}
+              style={{
+                marginTop: 2,
+                border: 'none',
+                borderRadius: 999,
+                padding: '4px 8px',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: '#2563eb',
+                color: '#ffffff',
+                boxShadow: BRAND.softShadow,
+              }}
+            >
+              Invite friends
             </button>
           )}
 

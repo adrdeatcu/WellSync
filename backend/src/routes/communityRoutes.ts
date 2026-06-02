@@ -8,6 +8,9 @@ import {
   postLeaveActivity,
   getActivityMessages,
   postActivityMessage,
+  postInviteToActivity,
+  getMyInvitations,
+  postRespondInvitation,
 } from '../controllers/communityController.js';
 
 const router = Router();
@@ -19,6 +22,14 @@ router.get('/activities', getActivities);
 router.get('/activities/mine', getMyActivities);
 router.post('/activities/:id/join', postJoinActivity);
 router.post('/activities/:id/leave', postLeaveActivity);
+
+// Invitations
+router.post('/activities/:id/invitations', postInviteToActivity);
+router.get('/activities/invitations', getMyInvitations);
+router.post(
+  '/activities/invitations/:invitationId/respond',
+  postRespondInvitation
+);
 
 // Activity messages routes
 router.get('/activities/:id/messages', getActivityMessages);

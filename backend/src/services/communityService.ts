@@ -187,8 +187,7 @@ export async function listPublicActivities(
     return activities.map((a) => {
       const participants_count = counts.get(a.id) ?? 0;
       const profile = profilesById.get(a.creator_user_id as string) ?? null;
-      const creator_name =
-        profile?.full_name?.trim() || 'Host';
+      const creator_name = profile?.full_name?.trim() || 'Host';
 
       return {
         id: a.id,
@@ -236,8 +235,7 @@ export async function listPublicActivities(
 
     const creatorId = a.creator_user_id as string;
     const profile = profilesById.get(creatorId) ?? null;
-    const creator_name =
-      profile?.full_name?.trim() || 'Host';
+    const creator_name = profile?.full_name?.trim() || 'Host';
 
     const is_friend_host = friendCreatorIds.has(creatorId);
 
@@ -617,4 +615,279 @@ export async function createActivityMessage(
   };
 
   return message;
+}
+
+/* ───────────────────── Invitations ───────────────────── */
+
+export type InvitationStatus = 'pending' | 'accepted' | 'declined';
+
+export interface ActivityInvitation {
+  id: number;
+  activity_id: string;
+  inviter_user_id: string;
+  invitee_user_id: string;
+  status: InvitationStatus;
+  created_at: string;
+  responded_at: string | null;
+  activity_title: string;
+  activity_city: string | null;
+  activity_start_time_utc: string | null;
+  inviter_name: string | null;
+}
+
+/**
+ * Check if two users are friends (status = 'accepted') in the friends table.
+ */
+async function areFriends(userId: string, otherUserId: string): Promise<boolean> {
+  if (userId === otherUserId) return false;
+
+  const [a, b] =
+    userId < otherUserId ? [userId, otherUserId] : [otherUserId, userId];
+
+  const { data, error } = await supabaseAdmin
+    .from('friends')
+    .select('user_id, friend_user_id, status')
+    .eq('user_id', a)
+    .eq('friend_user_id', b)
+    .eq('status', 'accepted')
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return !!data;
+}
+
+/**
+ * Invite a friend to an activity.
+ */
+export async function inviteFriendToActivity(
+  inviterUserId: string,
+  activityId: string,
+  inviteeUserId: string
+): Promise<void> {
+  if (inviterUserId === inviteeUserId) {
+    const err = new Error('Cannot invite yourself');
+    (err as any).code = 'SELF_INVITE';
+    throw err;
+  }
+
+  // Check that activity exists
+  const { data: activity, error: activityError } = await supabaseAdmin
+    .from('community_activities')
+    .select('id, is_public')
+    .eq('id', activityId)
+    .maybeSingle();
+
+  if (activityError) {
+    throw activityError;
+  }
+  if (!activity) {
+    const err = new Error('Activity not found');
+    (err as any).code = 'NOT_FOUND';
+    throw err;
+  }
+
+  // Check that inviter is a member of this activity
+  const { data: membership, error: membershipError } = await supabaseAdmin
+    .from('community_activity_members')
+    .select('activity_id')
+    .eq('activity_id', activityId)
+    .eq('user_id', inviterUserId)
+    .maybeSingle();
+
+  if (membershipError) {
+    throw membershipError;
+  }
+  if (!membership) {
+    const err = new Error('Only members can invite others to an activity');
+    (err as any).code = 'NOT_MEMBER';
+    throw err;
+  }
+
+  // Check that inviter and invitee are friends
+  const friends = await areFriends(inviterUserId, inviteeUserId);
+  if (!friends) {
+    const err = new Error('You can only invite your friends to this activity');
+    (err as any).code = 'NOT_FRIENDS';
+    throw err;
+  }
+
+  // Check that invitee is not already a member
+  const { data: existingMember, error: existingMemberError } =
+    await supabaseAdmin
+      .from('community_activity_members')
+      .select('activity_id')
+      .eq('activity_id', activityId)
+      .eq('user_id', inviteeUserId)
+      .maybeSingle();
+
+  if (existingMemberError) {
+    throw existingMemberError;
+  }
+  if (existingMember) {
+    const err = new Error('User is already a member of this activity');
+    (err as any).code = 'ALREADY_MEMBER';
+    throw err;
+  }
+
+  // Insert or update invitation (unique on activity_id + invitee_user_id)
+  const { error: inviteError } = await supabaseAdmin
+    .from('community_activity_invitations')
+    .upsert(
+      {
+        activity_id: activityId,
+        inviter_user_id: inviterUserId,
+        invitee_user_id: inviteeUserId,
+        status: 'pending' as InvitationStatus,
+        responded_at: null,
+      },
+      { onConflict: 'activity_id,invitee_user_id' }
+    );
+
+  if (inviteError) {
+    throw inviteError;
+  }
+}
+
+/**
+ * List invitations where the given user is the invitee.
+ * FIXED: no direct relationship to profiles; now uses two-step query.
+ */
+export async function listInvitationsForUser(
+  userId: string,
+  statusFilter: InvitationStatus | null = 'pending'
+): Promise<ActivityInvitation[]> {
+  // First, get invitations + activity via existing FK
+  let query = supabaseAdmin
+    .from('community_activity_invitations')
+    .select(
+      `
+      id,
+      activity_id,
+      inviter_user_id,
+      invitee_user_id,
+      status,
+      created_at,
+      responded_at,
+      activity:community_activities (
+        id,
+        title,
+        city,
+        start_time_utc
+      )
+      `
+    )
+    .eq('invitee_user_id', userId);
+
+  if (statusFilter) {
+    query = query.eq('status', statusFilter);
+  }
+
+  const { data, error } = await query.order('created_at', {
+    ascending: false,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const rows = (data ?? []) as any[];
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  // Collect inviter ids and load their profiles
+  const inviterIds = Array.from(
+    new Set(rows.map((row) => row.inviter_user_id as string))
+  );
+  const inviterProfiles = await loadProfileNames(inviterIds);
+
+  const invitations: ActivityInvitation[] = rows.map((row) => {
+    const activity = row.activity as any;
+    const profile = inviterProfiles.get(row.inviter_user_id as string) ?? null;
+
+    const inviter_name = buildDisplayName(profile);
+
+    return {
+      id: row.id as number,
+      activity_id: row.activity_id as string,
+      inviter_user_id: row.inviter_user_id as string,
+      invitee_user_id: row.invitee_user_id as string,
+      status: row.status as InvitationStatus,
+      created_at: row.created_at as string,
+      responded_at: (row.responded_at as string | null) ?? null,
+      activity_title: activity?.title ?? 'Activity',
+      activity_city: activity?.city ?? null,
+      activity_start_time_utc: activity?.start_time_utc ?? null,
+      inviter_name,
+    };
+  });
+
+  return invitations;
+}
+
+/**
+ * Accept or decline an invitation. If accepted, user joins the activity.
+ */
+export async function respondToInvitation(
+  userId: string,
+  invitationId: number,
+  decision: 'accept' | 'decline'
+): Promise<void> {
+  // Load invitation to ensure it belongs to this user
+  const { data: invitation, error: invitationError } = await supabaseAdmin
+    .from('community_activity_invitations')
+    .select('id, activity_id, invitee_user_id, status')
+    .eq('id', invitationId)
+    .maybeSingle();
+
+  if (invitationError) {
+    throw invitationError;
+  }
+  if (!invitation) {
+    const err = new Error('Invitation not found');
+    (err as any).code = 'NOT_FOUND';
+    throw err;
+  }
+  if (invitation.invitee_user_id !== userId) {
+    const err = new Error('You are not allowed to respond to this invitation');
+    (err as any).code = 'FORBIDDEN';
+    throw err;
+  }
+
+  const now = new Date().toISOString();
+
+  if (decision === 'accept') {
+    // Mark as accepted
+    const { error: updateError } = await supabaseAdmin
+      .from('community_activity_invitations')
+      .update({
+        status: 'accepted' as InvitationStatus,
+        responded_at: now,
+      })
+      .eq('id', invitationId);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    // Join activity (idempotent)
+    await joinActivity(userId, invitation.activity_id as string);
+  } else {
+    // Decline
+    const { error: updateError } = await supabaseAdmin
+      .from('community_activity_invitations')
+      .update({
+        status: 'declined' as InvitationStatus,
+        responded_at: now,
+      })
+      .eq('id', invitationId);
+
+    if (updateError) {
+      throw updateError;
+    }
+  }
 }

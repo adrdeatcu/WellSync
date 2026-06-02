@@ -10,3 +10,14 @@ export interface FriendsOverviewResponse {
   incoming_requests: FriendUser[];
   outgoing_requests: FriendUser[];
 }
+
+// NEW: activity invitations for the current user
+export interface ActivityInvitation {
+  id: number;
+  activity_id: string;
+  activity_title: string;
+  inviter_user_id: string;
+  inviter_name: string | null;
+  city: string | null;
+  scheduled_for: string; // preformatted label from backend or client
+}

@@ -8,6 +8,7 @@ import FriendsPanel from '../components/FriendsPanel';
 import type {
   FriendUser,
   FriendsOverviewResponse,
+  ActivityInvitation,
 } from '../types/friends';
 
 const backendUrl = process.env.REACT_APP_BACKEND_URL ?? 'http://localhost:4000';
@@ -85,6 +86,15 @@ const DashboardPage: React.FC = () => {
 
   const [friendsListOpen, setFriendsListOpen] = useState(true);
 
+  // NEW: activity invitations state
+  const [activityInvites, setActivityInvites] = useState<ActivityInvitation[]>(
+    []
+  );
+  const [activityInvitesLoading, setActivityInvitesLoading] = useState(false);
+  const [activityInvitesError, setActivityInvitesError] = useState<
+    string | null
+  >(null);
+
   useEffect(() => {
     async function load() {
       const {
@@ -125,10 +135,11 @@ const DashboardPage: React.FC = () => {
     load();
   }, [navigate]);
 
-  // Load friends overview when panel opens
+  // Load friends + invitations when panel opens
   useEffect(() => {
     if (!showUserPanel) return;
     void reloadFriends();
+    void reloadActivityInvites();
   }, [showUserPanel]);
 
   async function getSessionToken() {
@@ -150,7 +161,9 @@ const DashboardPage: React.FC = () => {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to load friends');
+        const errJson = await res.json().catch(() => null);
+        const msg = errJson?.error ?? 'Failed to load friends';
+        throw new Error(msg);
       }
 
       const json = (await res.json()) as FriendsOverviewResponse;
@@ -160,6 +173,55 @@ const DashboardPage: React.FC = () => {
       setFriendsError(err.message ?? 'Error loading friends');
     } finally {
       setFriendsLoading(false);
+    }
+  }
+
+  // NEW: load activity invitations
+  async function reloadActivityInvites() {
+    try {
+      setActivityInvitesLoading(true);
+      setActivityInvitesError(null);
+      const token = await getSessionToken();
+
+      const res = await fetch(`${backendUrl}/api/activities/invitations`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        const msg = errJson?.error ?? 'Failed to load activity invitations';
+        throw new Error(msg);
+      }
+
+      const json = await res.json();
+      const invitations = (json.invitations ?? []) as {
+        id: number;
+        activity_id: string;
+        activity_title: string;
+        inviter_user_id: string;
+        inviter_name: string | null;
+        city: string | null;
+        scheduled_for: string;
+      }[];
+
+      setActivityInvites(
+        invitations.map((inv) => ({
+          id: inv.id,
+          activity_id: inv.activity_id,
+          activity_title: inv.activity_title,
+          inviter_user_id: inv.inviter_user_id,
+          inviter_name: inv.inviter_name,
+          city: inv.city,
+          scheduled_for: inv.scheduled_for,
+        }))
+      );
+    } catch (err: any) {
+      console.error('Error loading activity invitations:', err);
+      setActivityInvitesError(
+        err.message ?? 'Error loading activity invitations'
+      );
+    } finally {
+      setActivityInvitesLoading(false);
     }
   }
 
@@ -247,6 +309,42 @@ const DashboardPage: React.FC = () => {
     } catch (err: any) {
       console.error('Error accepting friend request:', err);
       setFriendsError(err.message ?? 'Error accepting friend request');
+    }
+  }
+
+  // NEW: accept / decline activity invitation
+  async function handleRespondInvitation(
+    invitationId: number,
+    decision: 'accept' | 'decline'
+  ) {
+    try {
+      const token = await getSessionToken();
+
+      const res = await fetch(
+        `${backendUrl}/api/activities/invitations/${invitationId}/respond`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ decision }),
+        }
+      );
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        const msg = errJson?.error ?? 'Could not update invitation';
+        throw new Error(msg);
+      }
+
+      // Reload invitations so the accepted/declined one disappears
+      await reloadActivityInvites();
+    } catch (err: any) {
+      console.error('Error responding to activity invitation:', err);
+      setActivityInvitesError(
+        err.message ?? 'Error responding to activity invitation'
+      );
     }
   }
 
@@ -874,6 +972,11 @@ const DashboardPage: React.FC = () => {
               onSearchSubmit={handleSearchFriends}
               onSendFriendRequest={handleSendFriendRequest}
               onAcceptFriend={handleAcceptFriend}
+              // NEW props for activity invitations
+              activityInvites={activityInvites}
+              activityInvitesLoading={activityInvitesLoading}
+              activityInvitesError={activityInvitesError}
+              onRespondInvitation={handleRespondInvitation}
             />
 
             <button

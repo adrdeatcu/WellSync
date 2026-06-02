@@ -9,6 +9,9 @@ import {
   type CreateActivityInput,
   listActivityMessages,
   createActivityMessage,
+  inviteFriendToActivity,
+  listInvitationsForUser,
+  respondToInvitation,
 } from '../services/communityService.js';
 
 export async function postActivity(
@@ -216,6 +219,142 @@ export async function postActivityMessage(
     }
   } catch (err) {
     console.error('Error in postActivityMessage:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/* ─────────────────── Invitations ─────────────────── */
+
+export async function postInviteToActivity(
+  req: AuthenticatedRequest,
+  res: Response
+) {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const rawId = req.params.id;
+    const activityId = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!activityId) {
+      return res.status(400).json({ error: 'Activity id is required' });
+    }
+
+    const { invitee_user_id } = req.body as { invitee_user_id?: string };
+    if (!invitee_user_id) {
+      return res
+        .status(400)
+        .json({ error: 'invitee_user_id is required' });
+    }
+
+    try {
+      await inviteFriendToActivity(userId, activityId, invitee_user_id);
+      return res.status(200).json({ status: 'invited' });
+    } catch (err: any) {
+      if (err && (err as any).code === 'SELF_INVITE') {
+        return res.status(400).json({ error: 'Cannot invite yourself.' });
+      }
+      if (err && (err as any).code === 'NOT_FOUND') {
+        return res.status(404).json({ error: 'Activity not found.' });
+      }
+      if (err && (err as any).code === 'NOT_MEMBER') {
+        return res
+          .status(403)
+          .json({ error: 'Only members can invite others to this activity.' });
+      }
+      if (err && (err as any).code === 'NOT_FRIENDS') {
+        return res
+          .status(400)
+          .json({ error: 'You can only invite friends to this activity.' });
+      }
+      if (err && (err as any).code === 'ALREADY_MEMBER') {
+        return res
+          .status(400)
+          .json({ error: 'User is already a member of this activity.' });
+      }
+      console.error('Error in postInviteToActivity:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  } catch (err) {
+    console.error('Error in postInviteToActivity (outer):', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function getMyInvitations(
+  req: AuthenticatedRequest,
+  res: Response
+) {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const statusParam = req.query.status;
+    const status =
+      typeof statusParam === 'string' && statusParam.length > 0
+        ? (statusParam as any)
+        : 'pending';
+
+    const invitations = await listInvitationsForUser(userId, status);
+    return res.status(200).json({ invitations });
+  } catch (err) {
+    console.error('Error in getMyInvitations:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function postRespondInvitation(
+  req: AuthenticatedRequest,
+  res: Response
+) {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const rawId = req.params.invitationId;
+    const invitationIdStr = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!invitationIdStr) {
+      return res.status(400).json({ error: 'Invitation id is required' });
+    }
+
+    const invitationId = Number(invitationIdStr);
+    if (Number.isNaN(invitationId)) {
+      return res
+        .status(400)
+        .json({ error: 'Invitation id must be a number' });
+    }
+
+    const { decision } = req.body as { decision?: 'accept' | 'decline' };
+    if (decision !== 'accept' && decision !== 'decline') {
+      return res
+        .status(400)
+        .json({ error: "decision must be either 'accept' or 'decline'" });
+    }
+
+    try {
+      await respondToInvitation(userId, invitationId, decision);
+      return res.status(200).json({ status: 'ok' });
+    } catch (err: any) {
+      if (err && (err as any).code === 'NOT_FOUND') {
+        return res.status(404).json({ error: 'Invitation not found.' });
+      }
+      if (err && (err as any).code === 'FORBIDDEN') {
+        return res
+          .status(403)
+          .json({ error: 'You cannot respond to this invitation.' });
+      }
+      console.error('Error in postRespondInvitation:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  } catch (err) {
+    console.error('Error in postRespondInvitation (outer):', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

@@ -2,8 +2,8 @@
 import React from 'react';
 import type {
   FriendUser,
-  FriendsOverviewResponse,
 } from '../types/friends';
+import type { ActivityInvitation } from '../types/friends';
 
 interface FriendsPanelProps {
   BRAND: {
@@ -13,7 +13,11 @@ interface FriendsPanelProps {
     brandGradient: string;
   };
 
-  friendsData: FriendsOverviewResponse | null;
+  friendsData: {
+    friends: FriendUser[];
+    incoming_requests: FriendUser[];
+    outgoing_requests: FriendUser[];
+  } | null;
   friendsLoading: boolean;
   friendsError: string | null;
   friendsListOpen: boolean;
@@ -28,6 +32,12 @@ interface FriendsPanelProps {
   onSearchSubmit: (e: React.FormEvent) => void;
   onSendFriendRequest: (userId: string) => void;
   onAcceptFriend: (userId: string) => void;
+
+  // NEW: activity invitations
+  activityInvites: ActivityInvitation[];
+  activityInvitesLoading: boolean;
+  activityInvitesError: string | null;
+  onRespondInvitation: (id: number, decision: 'accept' | 'decline') => void;
 }
 
 const FriendsPanel: React.FC<FriendsPanelProps> = ({
@@ -45,6 +55,10 @@ const FriendsPanel: React.FC<FriendsPanelProps> = ({
   onSearchSubmit,
   onSendFriendRequest,
   onAcceptFriend,
+  activityInvites,
+  activityInvitesLoading,
+  activityInvitesError,
+  onRespondInvitation,
 }) => {
   const isFriend = (userId: string) =>
     friendsData?.friends.some((f) => f.id === userId) ?? false;
@@ -268,6 +282,153 @@ const FriendsPanel: React.FC<FriendsPanelProps> = ({
             </div>
           )}
 
+          {/* NEW: Activity invitations */}
+          <div style={{ marginBottom: 8 }}>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: BRAND.muted,
+                marginBottom: 2,
+              }}
+            >
+              Activity invitations
+            </div>
+
+            {activityInvitesLoading && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: BRAND.muted,
+                }}
+              >
+                Loading invitations…
+              </div>
+            )}
+
+            {activityInvitesError && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: '#b00020',
+                  marginTop: 2,
+                }}
+              >
+                {activityInvitesError}
+              </div>
+            )}
+
+            {!activityInvitesLoading &&
+              !activityInvitesError &&
+              activityInvites.length === 0 && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: '#8aa19f',
+                  }}
+                >
+                  No activity invitations.
+                </div>
+              )}
+
+            {!activityInvitesLoading &&
+              !activityInvitesError &&
+              activityInvites.length > 0 && (
+                <div
+                  style={{
+                    maxHeight: 140,
+                    overflowY: 'auto',
+                    marginTop: 2,
+                  }}
+                >
+                  {activityInvites.map((inv) => (
+                    <div
+                      key={inv.id}
+                      style={{
+                        padding: '4px 0',
+                        borderBottom:
+                          '1px solid rgba(31,95,99,0.06)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: BRAND.text,
+                        }}
+                      >
+                        {inv.activity_title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: BRAND.muted,
+                          marginTop: 1,
+                        }}
+                      >
+                        Invited by{' '}
+                        {inv.inviter_name ?? 'a friend'}
+                        {inv.city ? ` • ${inv.city}` : ''}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: '#8aa19f',
+                          marginTop: 1,
+                        }}
+                      >
+                        {inv.scheduled_for}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 4,
+                          display: 'flex',
+                          gap: 6,
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onRespondInvitation(inv.id, 'accept')
+                          }
+                          style={{
+                            border: 'none',
+                            borderRadius: 999,
+                            padding: '3px 10px',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            background: '#16a34a',
+                            color: '#fff',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onRespondInvitation(inv.id, 'decline')
+                          }
+                          style={{
+                            borderRadius: 999,
+                            border: `1px solid ${BRAND.border}`,
+                            background: '#ffffff',
+                            padding: '3px 10px',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            color: BRAND.muted,
+                          }}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+          </div>
+
           {/* Friends overview */}
           {friendsLoading ? (
             <div
@@ -437,7 +598,8 @@ const FriendsPanel: React.FC<FriendsPanelProps> = ({
                         key={u.id}
                         style={{
                           padding: '3px 0',
-                          borderBottom: '1px solid rgba(31,95,99,0.06)',
+                          borderBottom:
+                            '1px solid rgba(31,95,99,0.06)',
                         }}
                       >
                         <div style={{ fontWeight: 600 }}>
