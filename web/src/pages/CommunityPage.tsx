@@ -78,6 +78,14 @@ const CommunityPage: React.FC = () => {
     InviteFriend[]
   >([]);
 
+  // NEW: per-activity invite state
+  const [joinedFriendIds, setJoinedFriendIds] = React.useState<Set<string>>(
+    () => new Set()
+  );
+  const [invitedFriendIds, setInvitedFriendIds] = React.useState<Set<string>>(
+    () => new Set()
+  );
+
   function handleBackToDashboard() {
     navigate('/dashboard');
   }
@@ -597,8 +605,8 @@ const CommunityPage: React.FC = () => {
     setConfirmLeaveForId(activityId);
   }
 
-  // Open invite modal
-  function handleOpenInvite(activityId: string) {
+  // Open invite modal + load joined/invited info
+  async function handleOpenInvite(activityId: string) {
     const found = myActivities.find((a) => a.id === activityId);
     if (!found) {
       console.warn('Activity not found in myActivities', activityId);
@@ -606,6 +614,65 @@ const CommunityPage: React.FC = () => {
     }
     setInviteActivity(found);
     setInviteError(null);
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      console.error('Not logged in or cannot get session', sessionError);
+      return;
+    }
+    const accessToken = sessionData.session.access_token;
+
+    try {
+      // Members of this activity
+      const membersRes = await fetch(
+        `${backendUrl}/api/activities/${activityId}/members`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      if (membersRes.ok) {
+        const membersJson = await membersRes.json();
+        const memberIds = (membersJson.members ?? []) as string[];
+        setJoinedFriendIds(new Set(memberIds));
+      } else {
+        setJoinedFriendIds(new Set());
+      }
+
+      // Invitations created by me for this activity
+      const invRes = await fetch(
+        `${backendUrl}/api/activities/${activityId}/invitations/mine`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      if (invRes.ok) {
+        const invJson = await invRes.json();
+        const invitations = (invJson.invitations ?? []) as {
+          invitee_user_id: string;
+          status: 'pending' | 'accepted' | 'declined';
+        }[];
+
+        const invitedIds = new Set(
+          invitations
+            .filter((i) => i.status === 'pending')
+            .map((i) => i.invitee_user_id)
+        );
+        setInvitedFriendIds(invitedIds);
+      } else {
+        setInvitedFriendIds(new Set());
+      }
+    } catch (err) {
+      console.error('Error loading invite state for activity', err);
+      setJoinedFriendIds(new Set());
+      setInvitedFriendIds(new Set());
+    }
   }
 
   // Send invitation
@@ -647,6 +714,13 @@ const CommunityPage: React.FC = () => {
         setInviteLoading(false);
         return;
       }
+
+      // Mark friend as invited in UI
+      setInvitedFriendIds((prev) => {
+        const next = new Set(prev);
+        next.add(friendId);
+        return next;
+      });
 
       setInviteError(null);
       setInviteLoading(false);
@@ -1078,10 +1152,14 @@ const CommunityPage: React.FC = () => {
         friends={friendsForInvites}
         inviting={inviteLoading}
         inviteError={inviteError}
+        joinedFriendIds={joinedFriendIds}
+        invitedFriendIds={invitedFriendIds}
         onClose={() => {
           if (!inviteLoading) {
             setInviteActivity(null);
             setInviteError(null);
+            setJoinedFriendIds(new Set());
+            setInvitedFriendIds(new Set());
           }
         }}
         onInviteFriend={handleInviteFriend}

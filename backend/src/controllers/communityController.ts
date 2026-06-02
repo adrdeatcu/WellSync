@@ -12,6 +12,9 @@ import {
   inviteFriendToActivity,
   listInvitationsForUser,
   respondToInvitation,
+  // NEW IMPORTS:
+  listMembersForActivity,
+  listInvitationsForActivityAndInviter,
 } from '../services/communityService.js';
 
 export async function postActivity(
@@ -355,6 +358,60 @@ export async function postRespondInvitation(
     }
   } catch (err) {
     console.error('Error in postRespondInvitation (outer):', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function getActivityMembers(
+  req: AuthenticatedRequest,
+  res: Response
+) {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const rawId = req.params.id;
+    const activityId = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!activityId) {
+      return res.status(400).json({ error: 'Activity id is required' });
+    }
+
+    const members = await listMembersForActivity(activityId);
+    return res.status(200).json({ members });
+  } catch (err) {
+    console.error('Error in getActivityMembers:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function getMyActivityInvitationsForActivity(
+  req: AuthenticatedRequest,
+  res: Response
+) {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const rawId = req.params.id;
+    const activityId = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!activityId) {
+      return res.status(400).json({ error: 'Activity id is required' });
+    }
+
+    const invitations = await listInvitationsForActivityAndInviter(
+      activityId,
+      userId
+    );
+
+    return res.status(200).json({ invitations });
+  } catch (err) {
+    console.error('Error in getMyActivityInvitationsForActivity:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

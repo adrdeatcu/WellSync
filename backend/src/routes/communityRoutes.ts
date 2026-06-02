@@ -11,6 +11,8 @@ import {
   postInviteToActivity,
   getMyInvitations,
   postRespondInvitation,
+  getActivityMembers,
+  getMyActivityInvitationsForActivity,
 } from '../controllers/communityController.js';
 
 const router = Router();
@@ -29,6 +31,13 @@ router.get('/activities/invitations', getMyInvitations);
 router.post(
   '/activities/invitations/:invitationId/respond',
   postRespondInvitation
+);
+
+// NEW: invite modal helpers
+router.get('/activities/:id/members', getActivityMembers);
+router.get(
+  '/activities/:id/invitations/mine',
+  getMyActivityInvitationsForActivity
 );
 
 // Activity messages routes

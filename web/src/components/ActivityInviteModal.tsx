@@ -14,6 +14,8 @@ interface ActivityInviteModalProps {
   friends: InviteFriend[];
   inviting: boolean;
   inviteError: string | null;
+  joinedFriendIds: Set<string>;
+  invitedFriendIds: Set<string>;
   onClose: () => void;
   onInviteFriend: (friendId: string) => void;
 }
@@ -24,6 +26,8 @@ const ActivityInviteModal: React.FC<ActivityInviteModalProps> = ({
   friends,
   inviting,
   inviteError,
+  joinedFriendIds,
+  invitedFriendIds,
   onClose,
   onInviteFriend,
 }) => {
@@ -113,48 +117,84 @@ const ActivityInviteModal: React.FC<ActivityInviteModalProps> = ({
               gap: 8,
             }}
           >
-            {friends.map((friend) => (
-              <div
-                key={friend.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '6px 8px',
-                  borderRadius: 10,
-                  border: `1px solid ${BRAND.border}`,
-                  background: '#ffffff',
-                }}
-              >
-                <span
+            {friends.map((friend) => {
+              const joined = joinedFriendIds.has(friend.id);
+              const invited = invitedFriendIds.has(friend.id);
+
+              let rightLabel: React.ReactNode;
+              if (joined) {
+                rightLabel = (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: '#16a34a',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Joined
+                  </span>
+                );
+              } else if (invited) {
+                rightLabel = (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: '#8aa19f',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Invited
+                  </span>
+                );
+              } else {
+                rightLabel = (
+                  <button
+                    type="button"
+                    disabled={inviting}
+                    onClick={() => onInviteFriend(friend.id)}
+                    style={{
+                      borderRadius: 999,
+                      border: 'none',
+                      background: BRAND.brandGradient,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: inviting ? 'default' : 'pointer',
+                      color: '#ffffff',
+                      boxShadow: BRAND.softShadow,
+                      opacity: inviting ? 0.75 : 1,
+                    }}
+                  >
+                    {inviting ? 'Inviting...' : 'Invite'}
+                  </button>
+                );
+              }
+
+              return (
+                <div
+                  key={friend.id}
                   style={{
-                    fontSize: 13,
-                    color: BRAND.text,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '6px 8px',
+                    borderRadius: 10,
+                    border: `1px solid ${BRAND.border}`,
+                    background: '#ffffff',
                   }}
                 >
-                  {friend.name}
-                </span>
-                <button
-                  type="button"
-                  disabled={inviting}
-                  onClick={() => onInviteFriend(friend.id)}
-                  style={{
-                    borderRadius: 999,
-                    border: 'none',
-                    background: BRAND.brandGradient,
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: inviting ? 'default' : 'pointer',
-                    color: '#ffffff',
-                    boxShadow: BRAND.softShadow,
-                    opacity: inviting ? 0.75 : 1,
-                  }}
-                >
-                  {inviting ? 'Inviting...' : 'Invite'}
-                </button>
-              </div>
-            ))}
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: BRAND.text,
+                    }}
+                  >
+                    {friend.name}
+                  </span>
+                  {rightLabel}
+                </div>
+              );
+            })}
           </div>
         )}
 

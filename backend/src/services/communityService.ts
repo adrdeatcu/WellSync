@@ -76,20 +76,18 @@ export async function createActivity(
     throw memberError;
   }
 
-  // creator_name and is_friend_host are not strictly needed on create,
-  // frontend currently overrides creatorName as "You" for created activities.
   return {
     ...(data as any),
     creator_name: null,
     is_friend_host: false,
-    participants_count: 1, // creator is first participant
+    participants_count: 1,
   } as CommunityActivity;
 }
 
 export interface ListActivitiesOptions {
-  userId: string;                   // current user id
+  userId: string;
   city?: string | undefined;
-  fromTimeUtc?: string | undefined; // ISO string
+  fromTimeUtc?: string | undefined;
 }
 
 export async function listPublicActivities(
@@ -97,7 +95,6 @@ export async function listPublicActivities(
 ): Promise<CommunityActivity[]> {
   const { userId, city, fromTimeUtc } = options;
 
-  // Fetch all public activities matching filters
   let query = supabaseAdmin
     .from('community_activities')
     .select(
@@ -137,7 +134,6 @@ export async function listPublicActivities(
     return [];
   }
 
-  // Compute participants_count per activity
   const ids = activities.map((a) => a.id as string);
 
   const { data: membersData, error: membersError } = await supabaseAdmin
@@ -155,12 +151,10 @@ export async function listPublicActivities(
     counts.set(actId, (counts.get(actId) ?? 0) + 1);
   }
 
-  // Collect creator ids for profiles and friends lookup
   const creatorIds = Array.from(
     new Set(activities.map((a) => a.creator_user_id as string))
   );
 
-  // Load profiles for creators (full_name)
   const profilesById = new Map<string, { full_name: string | null }>();
 
   if (creatorIds.length > 0) {
@@ -170,7 +164,6 @@ export async function listPublicActivities(
       .in('id', creatorIds);
 
     if (profileError) {
-      // Log but do not fail; we can still return activities with "Host"
       console.error('listPublicActivities profiles query error', profileError);
     } else {
       for (const row of profileRows ?? []) {
@@ -183,7 +176,6 @@ export async function listPublicActivities(
   }
 
   if (creatorIds.length === 0) {
-    // No creators -> just map counts and neutral fields
     return activities.map((a) => {
       const participants_count = counts.get(a.id) ?? 0;
       const profile = profilesById.get(a.creator_user_id as string) ?? null;
@@ -207,7 +199,6 @@ export async function listPublicActivities(
     });
   }
 
-  // Query friends where status is 'accepted' and other side is one of creatorIds
   const { data: friendsData, error: friendsError } = await supabaseAdmin
     .from('friends')
     .select('user_id, friend_user_id, status')
@@ -259,7 +250,6 @@ export async function listPublicActivities(
   return result;
 }
 
-// helper type for the join result
 type MemberRow = {
   activity: {
     id: string;
@@ -305,8 +295,6 @@ export async function listMyActivities(
 
   const rows = (data ?? []) as unknown as MemberRow[];
   const activities: CommunityActivity[] = [];
-
-  // Collect IDs for counts
   const ids: string[] = [];
 
   for (const row of rows) {
@@ -314,8 +302,8 @@ export async function listMyActivities(
       activities.push({
         id: row.activity.id,
         creator_user_id: row.activity.creator_user_id,
-        creator_name: null,         // frontend sets "You" for mine
-        is_friend_host: false,      // not used in "Your activities" yet
+        creator_name: null,
+        is_friend_host: false,
         title: row.activity.title,
         description: row.activity.description,
         city: row.activity.city,
@@ -324,7 +312,7 @@ export async function listMyActivities(
         end_time_utc: row.activity.end_time_utc,
         is_public: row.activity.is_public,
         created_at: row.activity.created_at,
-        participants_count: 0,      // temporary, will fill below
+        participants_count: 0,
       });
       ids.push(row.activity.id);
     }
@@ -357,12 +345,10 @@ export async function listMyActivities(
   return withCounts;
 }
 
-// UPDATED: ensure creator rejoins as 'creator', others as 'member'
 export async function joinActivity(
   userId: string,
   activityId: string
 ): Promise<void> {
-  // Load activity to see who the creator is
   const { data: activity, error: activityError } = await supabaseAdmin
     .from('community_activities')
     .select('creator_user_id')
@@ -384,7 +370,6 @@ export async function joinActivity(
       role,
     });
 
-  // Ignore unique violation (already joined)
   if (error && (error as any).code !== '23505') {
     throw error;
   }
@@ -405,8 +390,6 @@ export async function leaveActivity(
   }
 }
 
-// Activity messages (chat)
-
 export interface ActivityMessage {
   id: number;
   activity_id: string;
@@ -416,9 +399,6 @@ export interface ActivityMessage {
   sender_name: string | null;
 }
 
-/**
- * Ensures the user is a member of the activity.
- */
 async function assertUserIsActivityMember(
   userId: string,
   activityId: string
@@ -441,10 +421,6 @@ async function assertUserIsActivityMember(
   }
 }
 
-/**
- * Helper to load profile names for a batch of user ids.
- * Returns a map: userId -> { full_name, username }.
- */
 async function loadProfileNames(
   userIds: string[]
 ): Promise<Map<string, { full_name: string | null; username: string | null }>> {
@@ -463,7 +439,6 @@ async function loadProfileNames(
     .in('id', userIds);
 
   if (error) {
-    // Do not break chat if profile query fails; just log and return empty names
     console.error('loadProfileNames error', error);
     return result;
   }
@@ -479,9 +454,6 @@ async function loadProfileNames(
   return result;
 }
 
-/**
- * Builds a display name like "Full Name (@username)" when possible.
- */
 function buildDisplayName(profile: {
   full_name: string | null;
   username: string | null;
@@ -501,14 +473,10 @@ function buildDisplayName(profile: {
   return null;
 }
 
-/**
- * List messages for an activity, only if user is a member.
- */
 export async function listActivityMessages(
   userId: string,
   activityId: string
 ): Promise<ActivityMessage[]> {
-  // Ensure the user is part of this activity
   await assertUserIsActivityMember(userId, activityId);
 
   const { data, error } = await supabaseAdmin
@@ -531,7 +499,6 @@ export async function listActivityMessages(
 
   const rows = (data ?? []) as any[];
 
-  // Collect unique sender ids and load their names
   const senderIds = Array.from(
     new Set(rows.map((row) => row.sender_user_id as string))
   );
@@ -557,9 +524,6 @@ export async function listActivityMessages(
   return messages;
 }
 
-/**
- * Post a message to an activity, only if user is a member.
- */
 export async function createActivityMessage(
   userId: string,
   activityId: string,
@@ -572,7 +536,6 @@ export async function createActivityMessage(
     throw err;
   }
 
-  // Ensure the user is part of this activity
   await assertUserIsActivityMember(userId, activityId);
 
   const { data, error } = await supabaseAdmin
@@ -599,7 +562,6 @@ export async function createActivityMessage(
 
   const row = data as any;
 
-  // Load profile once for this sender to get their name
   const profilesById = await loadProfileNames([userId]);
   const profile = profilesById.get(userId) ?? null;
 
@@ -617,8 +579,6 @@ export async function createActivityMessage(
   return message;
 }
 
-/* ───────────────────── Invitations ───────────────────── */
-
 export type InvitationStatus = 'pending' | 'accepted' | 'declined';
 
 export interface ActivityInvitation {
@@ -635,10 +595,10 @@ export interface ActivityInvitation {
   inviter_name: string | null;
 }
 
-/**
- * Check if two users are friends (status = 'accepted') in the friends table.
- */
-async function areFriends(userId: string, otherUserId: string): Promise<boolean> {
+async function areFriends(
+  userId: string,
+  otherUserId: string
+): Promise<boolean> {
   if (userId === otherUserId) return false;
 
   const [a, b] =
@@ -659,9 +619,6 @@ async function areFriends(userId: string, otherUserId: string): Promise<boolean>
   return !!data;
 }
 
-/**
- * Invite a friend to an activity.
- */
 export async function inviteFriendToActivity(
   inviterUserId: string,
   activityId: string,
@@ -673,7 +630,6 @@ export async function inviteFriendToActivity(
     throw err;
   }
 
-  // Check that activity exists
   const { data: activity, error: activityError } = await supabaseAdmin
     .from('community_activities')
     .select('id, is_public')
@@ -689,7 +645,6 @@ export async function inviteFriendToActivity(
     throw err;
   }
 
-  // Check that inviter is a member of this activity
   const { data: membership, error: membershipError } = await supabaseAdmin
     .from('community_activity_members')
     .select('activity_id')
@@ -706,7 +661,6 @@ export async function inviteFriendToActivity(
     throw err;
   }
 
-  // Check that inviter and invitee are friends
   const friends = await areFriends(inviterUserId, inviteeUserId);
   if (!friends) {
     const err = new Error('You can only invite your friends to this activity');
@@ -714,7 +668,6 @@ export async function inviteFriendToActivity(
     throw err;
   }
 
-  // Check that invitee is not already a member
   const { data: existingMember, error: existingMemberError } =
     await supabaseAdmin
       .from('community_activity_members')
@@ -732,7 +685,6 @@ export async function inviteFriendToActivity(
     throw err;
   }
 
-  // Insert or update invitation (unique on activity_id + invitee_user_id)
   const { error: inviteError } = await supabaseAdmin
     .from('community_activity_invitations')
     .upsert(
@@ -751,15 +703,10 @@ export async function inviteFriendToActivity(
   }
 }
 
-/**
- * List invitations where the given user is the invitee.
- * FIXED: no direct relationship to profiles; now uses two-step query.
- */
 export async function listInvitationsForUser(
   userId: string,
   statusFilter: InvitationStatus | null = 'pending'
 ): Promise<ActivityInvitation[]> {
-  // First, get invitations + activity via existing FK
   let query = supabaseAdmin
     .from('community_activity_invitations')
     .select(
@@ -799,7 +746,6 @@ export async function listInvitationsForUser(
     return [];
   }
 
-  // Collect inviter ids and load their profiles
   const inviterIds = Array.from(
     new Set(rows.map((row) => row.inviter_user_id as string))
   );
@@ -829,15 +775,11 @@ export async function listInvitationsForUser(
   return invitations;
 }
 
-/**
- * Accept or decline an invitation. If accepted, user joins the activity.
- */
 export async function respondToInvitation(
   userId: string,
   invitationId: number,
   decision: 'accept' | 'decline'
 ): Promise<void> {
-  // Load invitation to ensure it belongs to this user
   const { data: invitation, error: invitationError } = await supabaseAdmin
     .from('community_activity_invitations')
     .select('id, activity_id, invitee_user_id, status')
@@ -861,7 +803,6 @@ export async function respondToInvitation(
   const now = new Date().toISOString();
 
   if (decision === 'accept') {
-    // Mark as accepted
     const { error: updateError } = await supabaseAdmin
       .from('community_activity_invitations')
       .update({
@@ -874,10 +815,8 @@ export async function respondToInvitation(
       throw updateError;
     }
 
-    // Join activity (idempotent)
     await joinActivity(userId, invitation.activity_id as string);
   } else {
-    // Decline
     const { error: updateError } = await supabaseAdmin
       .from('community_activity_invitations')
       .update({
@@ -890,4 +829,41 @@ export async function respondToInvitation(
       throw updateError;
     }
   }
+}
+
+/* ─────────────── New helpers for invite modal ─────────────── */
+
+export async function listMembersForActivity(
+  activityId: string
+): Promise<string[]> {
+  const { data, error } = await supabaseAdmin
+    .from('community_activity_members')
+    .select('user_id')
+    .eq('activity_id', activityId);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((row: any) => row.user_id as string);
+}
+
+export async function listInvitationsForActivityAndInviter(
+  activityId: string,
+  inviterUserId: string
+): Promise<{ invitee_user_id: string; status: InvitationStatus }[]> {
+  const { data, error } = await supabaseAdmin
+    .from('community_activity_invitations')
+    .select('invitee_user_id, status')
+    .eq('activity_id', activityId)
+    .eq('inviter_user_id', inviterUserId);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((row: any) => ({
+    invitee_user_id: row.invitee_user_id as string,
+    status: row.status as InvitationStatus,
+  }));
 }
