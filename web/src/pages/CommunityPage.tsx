@@ -11,6 +11,7 @@ import ActivityInviteModal, {
 import MyActivitiesSection from '../components/MyActivitiesSection';
 import PublicActivitiesSection from '../components/PublicActivitiesSection';
 import { supabase } from '../supabaseClient';
+import './CommunityPage.css';
 
 const backendUrl =
   process.env.REACT_APP_BACKEND_URL ?? 'http://localhost:4000';
@@ -26,7 +27,7 @@ export interface CommunityActivity {
   scheduledFor: string;
   city?: string;
   locationDetails?: string;
-  // NEW: whether the logged-in user is the creator of this activity
+  // whether the logged-in user is the creator of this activity
   isCreator?: boolean;
 }
 
@@ -281,7 +282,6 @@ const CommunityPage: React.FC = () => {
           is_public: boolean;
           created_at: string;
           participants_count: number;
-          // NEW from backend
           member_role: 'creator' | 'member';
         }[];
 
@@ -801,87 +801,41 @@ const CommunityPage: React.FC = () => {
 
   return (
     <div
+      className="community-page-root"
       style={{
-        position: 'relative',
-        minHeight: '100vh',
         background: BRAND.bg,
-        overflow: 'hidden',
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
         color: BRAND.text,
+        // theme variables for CSS
+        ['--community-border-color' as any]: BRAND.border,
+        ['--community-card-shadow' as any]: BRAND.cardShadow,
+        ['--community-soft-shadow' as any]: BRAND.softShadow,
       }}
     >
       {/* Decorative blobs */}
       <div
-        style={{
-          pointerEvents: 'none',
-          position: 'absolute',
-          top: -160,
-          left: -160,
-          width: 420,
-          height: 420,
-          borderRadius: '50%',
-          background: BRAND.brandGradient,
-          opacity: 0.35,
-          filter: 'blur(80px)',
-        }}
+        className="community-page-blob community-page-blob--tl"
+        style={{ background: BRAND.brandGradient }}
       />
       <div
-        style={{
-          pointerEvents: 'none',
-          position: 'absolute',
-          bottom: -180,
-          right: -180,
-          width: 460,
-          height: 460,
-          borderRadius: '50%',
-          background: BRAND.brandGradient,
-          opacity: 0.28,
-          filter: 'blur(90px)',
-        }}
+        className="community-page-blob community-page-blob--br"
+        style={{ background: BRAND.brandGradient }}
       />
 
       {/* Top bar */}
-      <header
-        style={{
-          position: 'relative',
-          zIndex: 2,
-          height: 64,
-          padding: '0 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'rgba(255,255,255,0.75)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
-          borderBottom: `1px solid ${BRAND.border}`,
-        }}
-      >
+      <header className="community-page-header">
         <button
           type="button"
           onClick={handleBackToDashboard}
-          style={{
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            fontSize: 13,
-            color: BRAND.muted,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
+          className="community-page-back-button"
+          style={{ color: BRAND.muted }}
         >
           <span style={{ fontSize: 18 }}>←</span>
           <span>Back to dashboard</span>
         </button>
 
         <h1
-          style={{
-            margin: 0,
-            fontSize: 18,
-            fontWeight: 600,
-            color: BRAND.text,
-          }}
+          className="community-page-title"
+          style={{ color: BRAND.text }}
         >
           Community
         </h1>
@@ -890,42 +844,18 @@ const CommunityPage: React.FC = () => {
       </header>
 
       {/* Main */}
-      <main
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          maxWidth: 820,
-          margin: '30px auto',
-          padding: '0 20px 40px',
-        }}
-      >
+      <main className="community-page-main">
         {/* Intro card */}
-        <section
-          style={{
-            padding: 20,
-            borderRadius: 20,
-            border: `1px solid ${BRAND.border}`,
-            background: 'rgba(255,255,255,0.92)',
-            boxShadow: BRAND.cardShadow,
-            marginBottom: 18,
-          }}
-        >
+        <section className="community-page-intro">
           <h2
-            style={{
-              margin: 0,
-              fontSize: 20,
-              fontWeight: 600,
-              color: BRAND.text,
-            }}
+            className="community-page-intro-title"
+            style={{ color: BRAND.text }}
           >
             Join walks and challenges
           </h2>
           <p
-            style={{
-              margin: '8px 0 0',
-              fontSize: 13,
-              color: BRAND.muted,
-            }}
+            className="community-page-intro-text"
+            style={{ color: BRAND.muted }}
           >
             Discover community activities, create your own challenges, and see
             what your friends are up to.
@@ -1009,17 +939,7 @@ const CommunityPage: React.FC = () => {
       {/* Leave confirmation modal */}
       {activityToConfirmLeave && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 40, 42, 0.35)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 60,
-          }}
+          className="community-page-leave-overlay"
           onClick={() => {
             if (!joinLoading) {
               setConfirmLeaveForId(null);
@@ -1027,71 +947,33 @@ const CommunityPage: React.FC = () => {
           }}
         >
           <div
-            style={{
-              width: '100%',
-              maxWidth: 380,
-              borderRadius: 16,
-              background: 'rgba(255,255,255,0.97)',
-              boxShadow: BRAND.cardShadow,
-              border: `1px solid ${BRAND.border}`,
-              padding: 20,
-            }}
+            className="community-page-leave-modal"
             onClick={(e) => e.stopPropagation()}
           >
             <h3
-              style={{
-                margin: 0,
-                fontSize: 16,
-                fontWeight: 600,
-                color: BRAND.text,
-                marginBottom: 8,
-              }}
+              className="community-page-leave-title"
+              style={{ color: BRAND.text }}
             >
               Leave activity?
             </h3>
             <p
-              style={{
-                margin: '6px 0 0',
-                fontSize: 13,
-                color: BRAND.muted,
-              }}
+              className="community-page-leave-text"
+              style={{ color: BRAND.muted }}
             >
               You are about to leave “{activityToConfirmLeave.title}”. You will
               need to join again from the public list if you change your mind.
             </p>
 
             {joinError && (
-              <p
-                style={{
-                  margin: '8px 0 0',
-                  fontSize: 12,
-                  color: '#b00020',
-                }}
-              >
-                {joinError}
-              </p>
+              <p className="community-page-leave-error">{joinError}</p>
             )}
 
-            <div
-              style={{
-                marginTop: 14,
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: 8,
-              }}
-            >
+            <div className="community-page-leave-actions">
               <button
                 type="button"
                 onClick={() => !joinLoading && setConfirmLeaveForId(null)}
-                style={{
-                  borderRadius: 999,
-                  border: `1px solid ${BRAND.border}`,
-                  background: '#ffffff',
-                  padding: '6px 12px',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                  color: BRAND.muted,
-                }}
+                className="community-page-leave-cancel"
+                style={{ color: BRAND.muted }}
               >
                 Cancel
               </button>
@@ -1102,17 +984,10 @@ const CommunityPage: React.FC = () => {
                   handleConfirmLeave(activityToConfirmLeave.id)
                 }
                 disabled={joinLoading}
+                className="community-page-leave-confirm"
                 style={{
-                  borderRadius: 999,
-                  border: 'none',
-                  background: '#b91c1c',
-                  padding: '6px 14px',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: joinLoading ? 'default' : 'pointer',
-                  color: '#ffffff',
-                  boxShadow: BRAND.softShadow,
                   opacity: joinLoading ? 0.75 : 1,
+                  cursor: joinLoading ? 'default' : 'pointer',
                 }}
               >
                 {joinLoading ? 'Leaving...' : 'Leave activity'}
