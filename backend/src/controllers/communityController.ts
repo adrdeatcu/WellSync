@@ -12,9 +12,9 @@ import {
   inviteFriendToActivity,
   listInvitationsForUser,
   respondToInvitation,
-  // NEW IMPORTS:
   listMembersForActivity,
   listInvitationsForActivityAndInviter,
+  deleteActivityIfCreator,
 } from '../services/communityService.js';
 
 export async function postActivity(
@@ -412,6 +412,46 @@ export async function getMyActivityInvitationsForActivity(
     return res.status(200).json({ invitations });
   } catch (err) {
     console.error('Error in getMyActivityInvitationsForActivity:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/* ─────────────────── Delete activity ─────────────────── */
+
+export async function deleteActivity(
+  req: AuthenticatedRequest,
+  res: Response
+) {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const rawId = req.params.id;
+    const activityId = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!activityId) {
+      return res.status(400).json({ error: 'Activity id is required' });
+    }
+
+    try {
+      await deleteActivityIfCreator(userId, activityId);
+      return res.status(200).json({ status: 'deleted' });
+    } catch (err: any) {
+      if (err && (err as any).code === 'NOT_FOUND') {
+        return res.status(404).json({ error: 'Activity not found.' });
+      }
+      if (err && (err as any).code === 'FORBIDDEN') {
+        return res
+          .status(403)
+          .json({ error: 'Only the creator can delete this activity.' });
+      }
+      console.error('Error in deleteActivity:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  } catch (err) {
+    console.error('Error in deleteActivity (outer):', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

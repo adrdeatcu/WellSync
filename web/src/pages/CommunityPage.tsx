@@ -3,12 +3,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BRAND } from './DashboardPage';
 import CreateActivityWidget from '../components/CreateActivityWidget';
-import ActivityCard from '../components/ActivityCard';
 import ActivityModal from '../components/ActivityModal';
 import ActivityChatModal from '../components/ActivityChatModal';
 import ActivityInviteModal, {
   type InviteFriend,
 } from '../components/ActivityInviteModal';
+import MyActivitiesSection from '../components/MyActivitiesSection';
+import PublicActivitiesSection from '../components/PublicActivitiesSection';
 import { supabase } from '../supabaseClient';
 
 const backendUrl =
@@ -25,6 +26,8 @@ export interface CommunityActivity {
   scheduledFor: string;
   city?: string;
   locationDetails?: string;
+  // NEW: whether the logged-in user is the creator of this activity
+  isCreator?: boolean;
 }
 
 const CommunityPage: React.FC = () => {
@@ -78,13 +81,16 @@ const CommunityPage: React.FC = () => {
     InviteFriend[]
   >([]);
 
-  // NEW: per-activity invite state
+  // per-activity invite state
   const [joinedFriendIds, setJoinedFriendIds] = React.useState<Set<string>>(
     () => new Set()
   );
   const [invitedFriendIds, setInvitedFriendIds] = React.useState<Set<string>>(
     () => new Set()
   );
+
+  // Delete error state
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   function handleBackToDashboard() {
     navigate('/dashboard');
@@ -174,6 +180,7 @@ const CommunityPage: React.FC = () => {
             scheduledFor: whenLabel,
             city: a.city,
             locationDetails: a.location_details ?? undefined,
+            isCreator: false, // public list: we do not assume creator here
           };
         });
 
@@ -274,6 +281,8 @@ const CommunityPage: React.FC = () => {
           is_public: boolean;
           created_at: string;
           participants_count: number;
+          // NEW from backend
+          member_role: 'creator' | 'member';
         }[];
 
         if (cancelled) return;
@@ -282,18 +291,21 @@ const CommunityPage: React.FC = () => {
           const whenLabel =
             'Starts • ' + new Date(a.start_time_utc).toLocaleString();
 
+          const isCreator = a.member_role === 'creator';
+
           return {
             id: a.id,
             title: a.title,
             description: a.description ?? 'No description provided.',
             type: 'walk',
-            // For "Your activities" we keep showing "You"
-            creatorName: 'You',
+            // Only show "You" if the logged-in user is actually the creator
+            creatorName: isCreator ? 'You' : 'Host',
             participantsCount: a.participants_count ?? 0,
             isFriendHost: false,
             scheduledFor: whenLabel,
             city: a.city,
             locationDetails: a.location_details ?? undefined,
+            isCreator,
           };
         });
 
@@ -468,6 +480,7 @@ const CommunityPage: React.FC = () => {
         scheduledFor: whenLabel,
         city: created.city,
         locationDetails: created.location_details ?? undefined,
+        isCreator: true,
       };
 
       setMyActivities((prev) => [activity, ...prev]);
@@ -520,7 +533,8 @@ const CommunityPage: React.FC = () => {
         if (exists) {
           return prev;
         }
-        return [selectedActivity, ...prev];
+        // joined activities are not creators
+        return [{ ...selectedActivity, isCreator: false }, ...prev];
       });
 
       setAllPublicActivities((prev) =>
@@ -603,6 +617,54 @@ const CommunityPage: React.FC = () => {
 
   function handleRequestLeave(activityId: string) {
     setConfirmLeaveForId(activityId);
+  }
+
+  // Delete activity (creator only)
+  async function handleDeleteActivity(activityId: string) {
+    if (!window.confirm('Are you sure you want to delete this activity?')) {
+      return;
+    }
+
+    setDeleteError(null);
+
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      console.error('Not logged in or cannot get session', sessionError);
+      setDeleteError('You must be logged in to delete activities.');
+      return;
+    }
+
+    const accessToken = sessionData.session.access_token;
+
+    try {
+      const res = await fetch(`${backendUrl}/api/activities/${activityId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        const msg = errJson?.error ?? 'Failed to delete activity.';
+        console.error('Delete activity failed', msg);
+        setDeleteError(msg);
+        return;
+      }
+
+      // Remove from all lists
+      setMyActivities((prev) => prev.filter((a) => a.id !== activityId));
+      setAllPublicActivities((prev) =>
+        prev.filter((a) => a.id !== activityId)
+      );
+      setPublicActivities((prev) =>
+        prev.filter((a) => a.id !== activityId)
+      );
+    } catch (err) {
+      console.error('Unexpected error deleting activity', err);
+      setDeleteError('Unexpected error deleting activity. Please try again.');
+    }
   }
 
   // Open invite modal + load joined/invited info
@@ -871,254 +933,33 @@ const CommunityPage: React.FC = () => {
         </section>
 
         {/* Your activities */}
-        {(myActivities.length > 0 ||
-          myActivitiesLoading ||
-          myActivitiesError) && (
-          <section
-            style={{
-              borderRadius: 20,
-              border: `1px solid ${BRAND.border}`,
-              background: 'rgba(255,255,255,0.9)',
-              boxShadow: BRAND.cardShadow,
-              padding: 18,
-              marginBottom: 16,
-            }}
-          >
-            <h3
-              style={{
-                margin: 0,
-                fontSize: 16,
-                fontWeight: 600,
-                color: BRAND.text,
-                marginBottom: 10,
-              }}
-            >
-              Your activities
-            </h3>
-
-            {myActivitiesLoading && (
-              <p
-                style={{
-                  fontSize: 12,
-                  color: BRAND.muted,
-                  margin: '4px 0 0',
-                }}
-              >
-                Loading your activities...
-              </p>
-            )}
-
-            {myActivitiesError && (
-              <p
-                style={{
-                  fontSize: 12,
-                  color: '#b00020',
-                  margin: '4px 0 0',
-                }}
-              >
-                {myActivitiesError}
-              </p>
-            )}
-
-            {!myActivitiesLoading &&
-              !myActivitiesError &&
-              myActivities.length === 0 && (
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: BRAND.muted,
-                    margin: '4px 0 0',
-                  }}
-                >
-                  You have no activities yet.
-                </p>
-              )}
-
-            {!myActivitiesLoading &&
-              !myActivitiesError &&
-              myActivities.length > 0 && (
-                <div
-                  style={{
-                    marginTop: 6,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 10,
-                  }}
-                >
-                  {myActivities.map((activity) => (
-                    <ActivityCard
-                      key={activity.id}
-                      activity={activity}
-                      mode="mine"
-                      onLeave={handleRequestLeave}
-                      onOpenChat={(id) => {
-                        const found = myActivities.find((a) => a.id === id);
-                        if (found) {
-                          setChatActivity(found);
-                        }
-                      }}
-                      onInviteFriends={handleOpenInvite}
-                    />
-                  ))}
-                </div>
-              )}
-          </section>
-        )}
+        <MyActivitiesSection
+          activities={myActivities}
+          loading={myActivitiesLoading}
+          error={myActivitiesError}
+          onLeave={handleRequestLeave}
+          onOpenChat={(id) => {
+            const found = myActivities.find((a) => a.id === id);
+            if (found) {
+              setChatActivity(found);
+            }
+          }}
+          onInviteFriends={handleOpenInvite}
+          onDelete={handleDeleteActivity}
+          deleteError={deleteError}
+        />
 
         {/* Public activities */}
-        <section
-          style={{
-            borderRadius: 20,
-            border: `1px solid ${BRAND.border}`,
-            background: 'rgba(255,255,255,0.9)',
-            boxShadow: BRAND.cardShadow,
-            padding: 18,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-              marginBottom: 10,
-            }}
-          >
-            <div>
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: BRAND.text,
-                }}
-              >
-                Public activities
-              </h3>
-              <p
-                style={{
-                  margin: '4px 0 0',
-                  fontSize: 12,
-                  color: BRAND.muted,
-                }}
-              >
-                Filter by city or view all public activities.
-              </p>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <label
-                  style={{
-                    fontSize: 12,
-                    color: BRAND.muted,
-                  }}
-                >
-                  City:
-                </label>
-                <input
-                  type="text"
-                  placeholder="All cities"
-                  value={cityFilter}
-                  onChange={(e) => setCityFilter(e.target.value)}
-                  style={{
-                    fontSize: 12,
-                    padding: '4px 8px',
-                    borderRadius: 999,
-                    border: `1px solid ${BRAND.border}`,
-                    minWidth: 140,
-                  }}
-                />
-              </div>
-
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: 12,
-                  color: BRAND.muted,
-                  cursor: 'pointer',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={friendsOnly}
-                  onChange={(e) => setFriendsOnly(e.target.checked)}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span>Friends’ activities only</span>
-              </label>
-            </div>
-          </div>
-
-          {publicLoading && (
-            <p
-              style={{
-                fontSize: 12,
-                color: BRAND.muted,
-                margin: '4px 0 0',
-              }}
-            >
-              Loading activities...
-            </p>
-          )}
-
-          {publicError && (
-            <p
-              style={{
-                fontSize: 12,
-                color: '#b00020',
-                margin: '4px 0 0',
-              }}
-            >
-              {publicError}
-            </p>
-          )}
-
-          {!publicLoading && !publicError && (
-            <div
-              style={{
-                marginTop: publicActivities.length ? 0 : 6,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-              }}
-            >
-              {publicActivities.length === 0 ? (
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: BRAND.muted,
-                    margin: 0,
-                  }}
-                >
-                  No public activities available yet.
-                </p>
-              ) : (
-                publicActivities.map((activity) => (
-                  <ActivityCard
-                    key={activity.id}
-                    activity={activity}
-                    mode="public"
-                    onViewJoin={handleOpenJoinModal}
-                  />
-                ))
-              )}
-            </div>
-          )}
-        </section>
+        <PublicActivitiesSection
+          activities={publicActivities}
+          loading={publicLoading}
+          error={publicError}
+          cityFilter={cityFilter}
+          onCityFilterChange={setCityFilter}
+          friendsOnly={friendsOnly}
+          onFriendsOnlyChange={setFriendsOnly}
+          onViewJoin={handleOpenJoinModal}
+        />
       </main>
 
       <CreateActivityWidget onCreate={handleCreateActivity} />

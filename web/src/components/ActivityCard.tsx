@@ -10,8 +10,10 @@ interface ActivityCardProps {
   onLeave?: (id: string) => void;
   // Open chat for this activity (used in "Your activities")
   onOpenChat?: (id: string) => void;
-  // NEW: open invite friends modal
+  // Open invite friends modal
   onInviteFriends?: (id: string) => void;
+  // Delete activity (creator only)
+  onDelete?: (id: string) => void;
 }
 
 const ActivityCard: React.FC<ActivityCardProps> = ({
@@ -21,8 +23,15 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   onLeave,
   onOpenChat,
   onInviteFriends,
+  onDelete,
 }) => {
   const hasParticipants = activity.participantsCount > 0;
+
+  // Prefer explicit isCreator flag from CommunityPage; fall back to old logic if missing
+  const isCreator =
+    typeof activity.isCreator === 'boolean'
+      ? activity.isCreator
+      : activity.creatorName === 'You';
 
   return (
     <div
@@ -195,7 +204,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             </button>
           )}
 
-          {/* NEW: Invite friends */}
+          {/* Invite friends */}
           {onInviteFriends && (
             <button
               type="button"
@@ -214,6 +223,28 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
               }}
             >
               Invite friends
+            </button>
+          )}
+
+          {/* Delete activity (creator only) */}
+          {onDelete && isCreator && (
+            <button
+              type="button"
+              onClick={() => onDelete(activity.id)}
+              style={{
+                marginTop: 2,
+                border: 'none',
+                borderRadius: 999,
+                padding: '4px 8px',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: '#7f1d1d',
+                color: '#ffffff',
+                boxShadow: BRAND.softShadow,
+              }}
+            >
+              Delete activity
             </button>
           )}
 

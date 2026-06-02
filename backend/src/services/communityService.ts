@@ -16,6 +16,11 @@ export interface CommunityActivity {
   participants_count: number;
 }
 
+// NEW: activities as seen in "my activities" (includes membership role)
+export interface MyCommunityActivity extends CommunityActivity {
+  member_role: 'creator' | 'member';
+}
+
 export interface CreateActivityInput {
   title: string;
   description?: string | null;
@@ -263,15 +268,17 @@ type MemberRow = {
     is_public: boolean;
     created_at: string;
   } | null;
+  role: 'creator' | 'member';
 };
 
 export async function listMyActivities(
   userId: string
-): Promise<CommunityActivity[]> {
+): Promise<MyCommunityActivity[]> {
   const { data, error } = await supabaseAdmin
     .from('community_activity_members')
     .select(
       `
+      role,
       activity:community_activities (
         id,
         creator_user_id,
@@ -294,7 +301,7 @@ export async function listMyActivities(
   }
 
   const rows = (data ?? []) as unknown as MemberRow[];
-  const activities: CommunityActivity[] = [];
+  const activities: MyCommunityActivity[] = [];
   const ids: string[] = [];
 
   for (const row of rows) {
@@ -313,6 +320,7 @@ export async function listMyActivities(
         is_public: row.activity.is_public,
         created_at: row.activity.created_at,
         participants_count: 0,
+        member_role: row.role, // NEW
       });
       ids.push(row.activity.id);
     }
@@ -337,7 +345,7 @@ export async function listMyActivities(
     counts.set(actId, (counts.get(actId) ?? 0) + 1);
   }
 
-  const withCounts: CommunityActivity[] = activities.map((a) => ({
+  const withCounts: MyCommunityActivity[] = activities.map((a) => ({
     ...a,
     participants_count: counts.get(a.id) ?? 0,
   }));
@@ -866,4 +874,44 @@ export async function listInvitationsForActivityAndInviter(
     invitee_user_id: row.invitee_user_id as string,
     status: row.status as InvitationStatus,
   }));
+}
+
+/* ─────────────── New helper: delete activity if creator ─────────────── */
+
+export async function deleteActivityIfCreator(
+  userId: string,
+  activityId: string
+): Promise<void> {
+  // Check that this activity exists and that the caller is the creator
+  const { data: activity, error: activityError } = await supabaseAdmin
+    .from('community_activities')
+    .select('id, creator_user_id')
+    .eq('id', activityId)
+    .maybeSingle();
+
+  if (activityError) {
+    throw activityError;
+  }
+
+  if (!activity) {
+    const err = new Error('Activity not found');
+    (err as any).code = 'NOT_FOUND';
+    throw err;
+  }
+
+  if (activity.creator_user_id !== userId) {
+    const err = new Error('Only the creator can delete this activity');
+    (err as any).code = 'FORBIDDEN';
+    throw err;
+  }
+
+  // Delete the activity; ON DELETE CASCADE removes members, messages, invitations
+  const { error: deleteError } = await supabaseAdmin
+    .from('community_activities')
+    .delete()
+    .eq('id', activityId);
+
+  if (deleteError) {
+    throw deleteError;
+  }
 }

@@ -13,6 +13,7 @@ import {
   postRespondInvitation,
   getActivityMembers,
   getMyActivityInvitationsForActivity,
+  deleteActivity,
 } from '../controllers/communityController.js';
 
 const router = Router();
@@ -24,6 +25,7 @@ router.get('/activities', getActivities);
 router.get('/activities/mine', getMyActivities);
 router.post('/activities/:id/join', postJoinActivity);
 router.post('/activities/:id/leave', postLeaveActivity);
+router.delete('/activities/:id', deleteActivity);
 
 // Invitations
 router.post('/activities/:id/invitations', postInviteToActivity);
