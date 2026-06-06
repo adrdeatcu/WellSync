@@ -65,7 +65,8 @@ const inputStyle: React.CSSProperties = {
   color: BRAND.text,
   background: '#ffffff',
   outline: 'none',
-  transition: 'border-color .2s, box-shadow .2s',
+  transition: 'border-color .2s, box-shadow .2s, background .2s',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
 };
 
 const labelStyle: React.CSSProperties = {
@@ -74,6 +75,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 600,
   marginBottom: 6,
   color: BRAND.text,
+  letterSpacing: '0.02em',
 };
 
 const cardBase: React.CSSProperties = {
@@ -82,7 +84,7 @@ const cardBase: React.CSSProperties = {
   border: `1px solid ${BRAND.border}`,
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
-  boxShadow: '0 16px 40px -20px rgba(31,95,99,0.35)',
+  boxShadow: '0 16px 40px -20px rgba(31,95,99,0.35), 0 2px 8px rgba(31,95,99,0.08)',
 };
 
 /* ─────────────────── Component ─────────────────── */
@@ -331,14 +333,17 @@ const ProfilePage: React.FC = () => {
             fontSize: 13,
             fontWeight: 600,
             color: BRAND.deep,
-            transition: 'transform .1s, background .2s',
+            transition: 'transform .1s, background .2s, box-shadow .2s',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background = '#dceae7')
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background = '#eaf2f0')
-          }
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#dceae7';
+            e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#eaf2f0';
+            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+          }}
         >
           ← Dashboard
         </button>
@@ -429,12 +434,16 @@ const ProfilePage: React.FC = () => {
                 }
                 placeholder="Choose a unique username, e.g. adrian.d"
                 style={inputStyle}
-                onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = BRAND.mid)
-                }
-                onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = BRAND.border)
-                }
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = BRAND.mid;
+                  e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
+                  e.currentTarget.style.background = '#f9fcfb';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = BRAND.border;
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+                  e.currentTarget.style.background = '#ffffff';
+                }}
               />
               <p
                 style={{
@@ -459,12 +468,16 @@ const ProfilePage: React.FC = () => {
                 }
                 placeholder="Your full name"
                 style={inputStyle}
-                onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = BRAND.mid)
-                }
-                onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = BRAND.border)
-                }
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = BRAND.mid;
+                  e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
+                  e.currentTarget.style.background = '#f9fcfb';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = BRAND.border;
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+                  e.currentTarget.style.background = '#ffffff';
+                }}
               />
             </div>
 
@@ -491,12 +504,16 @@ const ProfilePage: React.FC = () => {
                   placeholder="Years"
                   min={0}
                   style={inputStyle}
-                  onFocus={(e) =>
-                    (e.currentTarget.style.borderColor = BRAND.mid)
-                  }
-                  onBlur={(e) =>
-                    (e.currentTarget.style.borderColor = BRAND.border)
-                  }
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = BRAND.mid;
+                    e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
+                    e.currentTarget.style.background = '#f9fcfb';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = BRAND.border;
+                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+                    e.currentTarget.style.background = '#ffffff';
+                  }}
                 />
               </div>
 
@@ -514,12 +531,16 @@ const ProfilePage: React.FC = () => {
                   placeholder="e.g. 170"
                   min={0}
                   style={inputStyle}
-                  onFocus={(e) =>
-                    (e.currentTarget.style.borderColor = BRAND.mid)
-                  }
-                  onBlur={(e) =>
-                    (e.currentTarget.style.borderColor = BRAND.border)
-                  }
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = BRAND.mid;
+                    e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
+                    e.currentTarget.style.background = '#f9fcfb';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = BRAND.border;
+                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+                    e.currentTarget.style.background = '#ffffff';
+                  }}
                 />
               </div>
 
@@ -538,12 +559,16 @@ const ProfilePage: React.FC = () => {
                   placeholder="e.g. 65.5"
                   min={0}
                   style={inputStyle}
-                  onFocus={(e) =>
-                    (e.currentTarget.style.borderColor = BRAND.mid)
-                  }
-                  onBlur={(e) =>
-                    (e.currentTarget.style.borderColor = BRAND.border)
-                  }
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = BRAND.mid;
+                    e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
+                    e.currentTarget.style.background = '#f9fcfb';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = BRAND.border;
+                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+                    e.currentTarget.style.background = '#ffffff';
+                  }}
                 />
               </div>
             </div>
@@ -567,6 +592,16 @@ const ProfilePage: React.FC = () => {
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'right 12px center',
                   paddingRight: 32,
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = BRAND.mid;
+                  e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
+                  e.currentTarget.style.background = '#f9fcfb';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = BRAND.border;
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+                  e.currentTarget.style.background = '#ffffff';
                 }}
               >
                 <option value="">Select activity level</option>
@@ -592,12 +627,16 @@ const ProfilePage: React.FC = () => {
                 }
                 min={0}
                 style={inputStyle}
-                onFocus={(e) =>
-                  (e.currentTarget.style.borderColor = BRAND.mid)
-                }
-                onBlur={(e) =>
-                  (e.currentTarget.style.borderColor = BRAND.border)
-                }
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = BRAND.mid;
+                  e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
+                  e.currentTarget.style.background = '#f9fcfb';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = BRAND.border;
+                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
+                  e.currentTarget.style.background = '#ffffff';
+                }}
               />
               <p
                 style={{
@@ -614,7 +653,7 @@ const ProfilePage: React.FC = () => {
             <div
               style={{
                 height: 1,
-                background: BRAND.border,
+                background: `linear-gradient(90deg, transparent, ${BRAND.border}, transparent)`,
                 marginBottom: 22,
               }}
             />
@@ -635,14 +674,21 @@ const ProfilePage: React.FC = () => {
                   fontSize: 14,
                   cursor: 'pointer',
                   opacity: saving ? 0.7 : 1,
-                  transition: 'opacity .2s, transform .1s',
+                  transition: 'opacity .2s, transform .1s, box-shadow .2s',
+                  boxShadow: '0 2px 8px rgba(31,95,99,0.25)',
                 }}
-                onMouseEnter={(e) =>
-                  !saving && (e.currentTarget.style.opacity = '0.92')
-                }
-                onMouseLeave={(e) =>
-                  !saving && (e.currentTarget.style.opacity = '1')
-                }
+                onMouseEnter={(e) => {
+                  if (!saving) {
+                    e.currentTarget.style.opacity = '0.92';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(31,95,99,0.35)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!saving) {
+                    e.currentTarget.style.opacity = '1';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(31,95,99,0.25)';
+                  }
+                }}
                 onMouseDown={(e) =>
                   !saving &&
                   (e.currentTarget.style.transform = 'scale(0.98)')
