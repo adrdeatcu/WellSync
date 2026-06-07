@@ -933,11 +933,6 @@ const DashboardPage: React.FC = () => {
                     key={sec}
                     type="button"
                     onClick={() => {
-                      if (sec === 'history') {
-                        setShowUserPanel(false);
-                        navigate('/history');
-                        return;
-                      }
                       if (sec === 'profile') {
                         setShowUserPanel(false);
                         navigate('/profile');
