@@ -63,7 +63,7 @@ const DashboardPage: React.FC = () => {
   const [todayStats, setTodayStats] = useState<TodayStatsResponse | null>(null);
   const [goals, setGoals] = useState<GoalsResponse | null>(null);
   const [showUserPanel, setShowUserPanel] = useState(false);
-  const [panelSection, setPanelSection] = useState<PanelSection>('history');
+  const [panelSection, setPanelSection] = useState<PanelSection>('profile');
 
   // AI coach state
   const [coachLoading, setCoachLoading] = useState(false);
