@@ -37,7 +37,7 @@ interface GoalsResponse {
   } | null;
 }
 
-type PanelSection = 'history' | 'profile';
+type PanelSection = 'profile';
 
 interface FriendsSearchResponse {
   results: FriendUser[];
@@ -519,6 +519,23 @@ const DashboardPage: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* History nav button */}
+          <button
+            type="button"
+            onClick={() => navigate('/history')}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 999,
+              border: `1px solid ${BRAND.border}`,
+              background: '#ffffff',
+              color: BRAND.text,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            History
+          </button>
           {/* Community nav button */}
           <button
             type="button"
@@ -909,7 +926,7 @@ const DashboardPage: React.FC = () => {
                 borderRadius: 999,
               }}
             >
-              {(['history', 'profile'] as PanelSection[]).map((sec) => {
+              {(['profile'] as PanelSection[]).map((sec) => {
                 const active = panelSection === sec;
                 return (
                   <button
