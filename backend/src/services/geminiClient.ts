@@ -1,30 +1,26 @@
 // src/services/geminiClient.ts
 import dotenv from 'dotenv';
-import { GoogleAuth } from 'google-auth-library';
 
 dotenv.config();
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
 const GEMINI_API_BASE_URL =
-  process.env.GEMINI_API_BASE_URL ?? 'https://generativelanguage.googleapis.com/v1beta';
+  process.env.GEMINI_API_BASE_URL ??
+  'https://generativelanguage.googleapis.com/v1beta';
 
-// Scope for generative language on Google Cloud / Agent Platform
-const SCOPES = ['https://www.googleapis.com/auth/cloud-platform'];
+const GEMINI_API_KEY_ENV = process.env.GEMINI_API_KEY;
 
-const auth = new GoogleAuth({
-  scopes: SCOPES,
-});
+if (!GEMINI_API_KEY_ENV) {
+  throw new Error('GEMINI_API_KEY is not set in environment');
+}
+
+// Non-null string used below
+const GEMINI_API_KEY: string = GEMINI_API_KEY_ENV;
 
 export async function generateText(prompt: string): Promise<string> {
-  const client = await auth.getClient();
-  const accessTokenResponse = await client.getAccessToken();
-
-  const accessToken = accessTokenResponse.token;
-  if (!accessToken) {
-    throw new Error('Failed to obtain access token for Gemini API');
-  }
-
-  const url = `${GEMINI_API_BASE_URL}/models/${GEMINI_MODEL}:generateContent`;
+  const url = `${GEMINI_API_BASE_URL}/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(
+    GEMINI_API_KEY,
+  )}`;
 
   const body = {
     contents: [
@@ -35,14 +31,12 @@ export async function generateText(prompt: string): Promise<string> {
     ],
   };
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${accessToken}`,
-  };
-
   const response = await fetch(url, {
     method: 'POST',
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      // No Authorization header needed when using API key mode
+    },
     body: JSON.stringify(body),
   });
 
