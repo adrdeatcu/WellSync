@@ -1,3 +1,4 @@
+// src/pages/ProfilePage.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -21,6 +22,9 @@ interface Profile {
   high_hr_threshold: number | null;
   low_spo2_threshold: number | null;
   poor_air_quality_threshold: number | null;
+  // NEW: emergency contact
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
 }
 
 type ActivityLevel =
@@ -38,7 +42,7 @@ const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string }[] = [
   { value: 'athlete',           label: 'Athlete' },
 ];
 
-/* ─────────── Design tokens (same as login / dashboard) ─────────── */
+/* ─────────── Design tokens ─────────── */
 const BRAND = {
   deep:    '#1f5f63',
   mid:     '#2f8a8f',
@@ -87,7 +91,6 @@ const cardBase: React.CSSProperties = {
   boxShadow: '0 16px 40px -20px rgba(31,95,99,0.35), 0 2px 8px rgba(31,95,99,0.08)',
 };
 
-/* ─────────────────── Component ─────────────────── */
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -138,9 +141,18 @@ const ProfilePage: React.FC = () => {
           high_hr_threshold: null,
           low_spo2_threshold: null,
           poor_air_quality_threshold: null,
+          emergency_contact_name: null,
+          emergency_contact_phone: null,
         });
       } else {
-        setProfile(json.profile);
+        // Ensure emergency fields exist
+        setProfile({
+          ...json.profile,
+          emergency_contact_name:
+            json.profile.emergency_contact_name ?? null,
+          emergency_contact_phone:
+            json.profile.emergency_contact_phone ?? null,
+        });
       }
     } catch (err: any) {
       setError(err.message ?? 'Error loading profile');
@@ -183,6 +195,9 @@ const ProfilePage: React.FC = () => {
         weight_kg: profile.weight_kg,
         activity_level: profile.activity_level,
         step_goal_per_day: profile.step_goal_per_day,
+        // NEW: emergency contact
+        emergency_contact_name: profile.emergency_contact_name,
+        emergency_contact_phone: profile.emergency_contact_phone,
       };
 
       const res = await fetch(`${backendUrl}/api/profile`, {
@@ -214,7 +229,6 @@ const ProfilePage: React.FC = () => {
     navigate('/dashboard');
   }
 
-  /* ─────────── Render helpers ─────────── */
   const Alert = ({
     type,
     children,
@@ -277,7 +291,7 @@ const ProfilePage: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      {/* Decorative blobs (same as login) */}
+      {/* Decorative blobs */}
       <div
         style={{
           position: 'absolute',
@@ -307,7 +321,7 @@ const ProfilePage: React.FC = () => {
         }}
       />
 
-      {/* ── Header ── */}
+      {/* Header */}
       <header
         style={{
           ...cardBase,
@@ -336,14 +350,6 @@ const ProfilePage: React.FC = () => {
             transition: 'transform .1s, background .2s, box-shadow .2s',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#dceae7';
-            e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#eaf2f0';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
-          }}
         >
           ← Dashboard
         </button>
@@ -366,7 +372,7 @@ const ProfilePage: React.FC = () => {
         <div style={{ width: 100 }} />
       </header>
 
-      {/* ── Content ── */}
+      {/* Content */}
       <div
         style={{
           position: 'relative',
@@ -412,7 +418,7 @@ const ProfilePage: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ ...cardBase, padding: 28 }}>
-            {/* Title row */}
+            {/* Title */}
             <div style={{ marginBottom: 20 }}>
               <SectionTitle>Personal details</SectionTitle>
               <SectionSub>
@@ -434,16 +440,6 @@ const ProfilePage: React.FC = () => {
                 }
                 placeholder="Choose a unique username, e.g. adrian.d"
                 style={inputStyle}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = BRAND.mid;
-                  e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
-                  e.currentTarget.style.background = '#f9fcfb';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = BRAND.border;
-                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
-                  e.currentTarget.style.background = '#ffffff';
-                }}
               />
               <p
                 style={{
@@ -468,20 +464,10 @@ const ProfilePage: React.FC = () => {
                 }
                 placeholder="Your full name"
                 style={inputStyle}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = BRAND.mid;
-                  e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
-                  e.currentTarget.style.background = '#f9fcfb';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = BRAND.border;
-                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
-                  e.currentTarget.style.background = '#ffffff';
-                }}
               />
             </div>
 
-            {/* Age / Height / Weight grid */}
+            {/* Age / Height / Weight */}
             <div
               style={{
                 display: 'grid',
@@ -504,16 +490,6 @@ const ProfilePage: React.FC = () => {
                   placeholder="Years"
                   min={0}
                   style={inputStyle}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = BRAND.mid;
-                    e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
-                    e.currentTarget.style.background = '#f9fcfb';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = BRAND.border;
-                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
-                    e.currentTarget.style.background = '#ffffff';
-                  }}
                 />
               </div>
 
@@ -531,16 +507,6 @@ const ProfilePage: React.FC = () => {
                   placeholder="e.g. 170"
                   min={0}
                   style={inputStyle}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = BRAND.mid;
-                    e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
-                    e.currentTarget.style.background = '#f9fcfb';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = BRAND.border;
-                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
-                    e.currentTarget.style.background = '#ffffff';
-                  }}
                 />
               </div>
 
@@ -559,16 +525,6 @@ const ProfilePage: React.FC = () => {
                   placeholder="e.g. 65.5"
                   min={0}
                   style={inputStyle}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = BRAND.mid;
-                    e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
-                    e.currentTarget.style.background = '#f9fcfb';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = BRAND.border;
-                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
-                    e.currentTarget.style.background = '#ffffff';
-                  }}
                 />
               </div>
             </div>
@@ -593,16 +549,6 @@ const ProfilePage: React.FC = () => {
                   backgroundPosition: 'right 12px center',
                   paddingRight: 32,
                 }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = BRAND.mid;
-                  e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
-                  e.currentTarget.style.background = '#f9fcfb';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = BRAND.border;
-                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
-                  e.currentTarget.style.background = '#ffffff';
-                }}
               >
                 <option value="">Select activity level</option>
                 {ACTIVITY_OPTIONS.map((opt) => (
@@ -614,7 +560,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* Step goal */}
-            <div style={{ marginBottom: 22 }}>
+            <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Daily step goal</label>
               <input
                 type="number"
@@ -627,16 +573,6 @@ const ProfilePage: React.FC = () => {
                 }
                 min={0}
                 style={inputStyle}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = BRAND.mid;
-                  e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND.mid}22`;
-                  e.currentTarget.style.background = '#f9fcfb';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = BRAND.border;
-                  e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.02)';
-                  e.currentTarget.style.background = '#ffffff';
-                }}
               />
               <p
                 style={{
@@ -646,6 +582,64 @@ const ProfilePage: React.FC = () => {
                 }}
               >
                 This goal is used on your dashboard and in recommendations.
+              </p>
+            </div>
+
+            {/* NEW: emergency contact section */}
+            <div
+              style={{
+                height: 1,
+                background: `linear-gradient(90deg, transparent, ${BRAND.border}, transparent)`,
+                marginBottom: 18,
+              }}
+            />
+
+            <div style={{ marginBottom: 12 }}>
+              <SectionTitle>Emergency contact</SectionTitle>
+              <SectionSub>
+                This contact is used by the fall detection demo to place
+                automated calls.
+              </SectionSub>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Emergency contact name</label>
+              <input
+                type="text"
+                value={profile.emergency_contact_name ?? ''}
+                onChange={(e) =>
+                  handleFieldChange(
+                    'emergency_contact_name',
+                    e.target.value || null
+                  )
+                }
+                placeholder="e.g. Mom"
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 22 }}>
+              <label style={labelStyle}>Emergency contact phone</label>
+              <input
+                type="tel"
+                value={profile.emergency_contact_phone ?? ''}
+                onChange={(e) =>
+                  handleFieldChange(
+                    'emergency_contact_phone',
+                    e.target.value || null
+                  )
+                }
+                placeholder="e.g. +40..."
+                style={inputStyle}
+              />
+              <p
+                style={{
+                  margin: '6px 0 0',
+                  fontSize: 12,
+                  color: BRAND.muted,
+                }}
+              >
+                Make sure to include the country code for international calls.
               </p>
             </div>
 
@@ -677,25 +671,6 @@ const ProfilePage: React.FC = () => {
                   transition: 'opacity .2s, transform .1s, box-shadow .2s',
                   boxShadow: '0 2px 8px rgba(31,95,99,0.25)',
                 }}
-                onMouseEnter={(e) => {
-                  if (!saving) {
-                    e.currentTarget.style.opacity = '0.92';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(31,95,99,0.35)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!saving) {
-                    e.currentTarget.style.opacity = '1';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(31,95,99,0.25)';
-                  }
-                }}
-                onMouseDown={(e) =>
-                  !saving &&
-                  (e.currentTarget.style.transform = 'scale(0.98)')
-                }
-                onMouseUp={(e) =>
-                  (e.currentTarget.style.transform = 'scale(1)')
-                }
               >
                 {saving ? 'Saving…' : 'Save changes'}
               </button>
@@ -704,7 +679,6 @@ const ProfilePage: React.FC = () => {
         )}
       </div>
 
-      {/* Spinner keyframes */}
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }

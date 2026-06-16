@@ -1,3 +1,4 @@
+// src/services/profileService.ts
 import { supabaseAdmin } from '../db/index.js';
 
 export interface Profile {
@@ -11,6 +12,9 @@ export interface Profile {
   high_hr_threshold: number | null;
   low_spo2_threshold: number | null;
   poor_air_quality_threshold: number | null;
+  // NEW: emergency contact
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
 }
 
 export interface UpdateProfileInput {
@@ -24,6 +28,9 @@ export interface UpdateProfileInput {
   high_hr_threshold?: number | null;
   low_spo2_threshold?: number | null;
   poor_air_quality_threshold?: number | null;
+  // NEW: emergency contact
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
 }
 
 export async function getProfileForUser(userId: string): Promise<Profile | null> {
@@ -40,7 +47,9 @@ export async function getProfileForUser(userId: string): Promise<Profile | null>
       step_goal_per_day,
       high_hr_threshold,
       low_spo2_threshold,
-      poor_air_quality_threshold
+      poor_air_quality_threshold,
+      emergency_contact_name,
+      emergency_contact_phone
       `
     )
     .eq('id', userId)
@@ -69,6 +78,8 @@ export async function getProfileForUser(userId: string): Promise<Profile | null>
     high_hr_threshold: data.high_hr_threshold ?? null,
     low_spo2_threshold: data.low_spo2_threshold ?? null,
     poor_air_quality_threshold: data.poor_air_quality_threshold ?? null,
+    emergency_contact_name: data.emergency_contact_name ?? null,
+    emergency_contact_phone: data.emergency_contact_phone ?? null,
   };
 }
 
@@ -108,6 +119,13 @@ export async function updateProfileForUser(
   if ('poor_air_quality_threshold' in input) {
     update.poor_air_quality_threshold = input.poor_air_quality_threshold;
   }
+  // NEW: emergency contact
+  if ('emergency_contact_name' in input) {
+    update.emergency_contact_name = input.emergency_contact_name;
+  }
+  if ('emergency_contact_phone' in input) {
+    update.emergency_contact_phone = input.emergency_contact_phone;
+  }
 
   const { data, error } = await supabaseAdmin
     .from('profiles')
@@ -124,7 +142,9 @@ export async function updateProfileForUser(
       step_goal_per_day,
       high_hr_threshold,
       low_spo2_threshold,
-      poor_air_quality_threshold
+      poor_air_quality_threshold,
+      emergency_contact_name,
+      emergency_contact_phone
       `
     )
     .single();
@@ -144,5 +164,7 @@ export async function updateProfileForUser(
     high_hr_threshold: data.high_hr_threshold ?? null,
     low_spo2_threshold: data.low_spo2_threshold ?? null,
     poor_air_quality_threshold: data.poor_air_quality_threshold ?? null,
+    emergency_contact_name: data.emergency_contact_name ?? null,
+    emergency_contact_phone: data.emergency_contact_phone ?? null,
   };
 }
