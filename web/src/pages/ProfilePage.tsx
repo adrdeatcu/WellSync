@@ -349,9 +349,13 @@ const ProfilePage: React.FC = () => {
             color: BRAND.deep,
             transition: 'transform .1s, background .2s, box-shadow .2s',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
           }}
         >
-          ← Dashboard
+          <span style={{ fontSize: 16 }}>🏠</span>
+          Dashboard
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -362,7 +366,10 @@ const ProfilePage: React.FC = () => {
             draggable={false}
           />
           <div style={{ lineHeight: 1.25 }}>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>Profile</div>
+            <div style={{ fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 18 }}>👤</span>
+              Profile
+            </div>
             <div style={{ fontSize: 11, color: BRAND.muted }}>
               Keep your details in sync
             </div>
@@ -420,7 +427,10 @@ const ProfilePage: React.FC = () => {
           <form onSubmit={handleSubmit} style={{ ...cardBase, padding: 28 }}>
             {/* Title */}
             <div style={{ marginBottom: 20 }}>
-              <SectionTitle>Personal details</SectionTitle>
+              <SectionTitle>
+                <span style={{ marginRight: 8 }}>📋</span>
+                Personal details
+              </SectionTitle>
               <SectionSub>
                 Update your info so WellSync can stay in tune with you.
               </SectionSub>
@@ -431,7 +441,10 @@ const ProfilePage: React.FC = () => {
 
             {/* Username */}
             <div style={{ marginBottom: 18 }}>
-              <label style={labelStyle}>Username</label>
+              <label style={labelStyle}>
+                <span style={{ marginRight: 6 }}>👤</span>
+                Username
+              </label>
               <input
                 type="text"
                 value={profile.username ?? ''}
@@ -455,7 +468,10 @@ const ProfilePage: React.FC = () => {
 
             {/* Full name */}
             <div style={{ marginBottom: 18 }}>
-              <label style={labelStyle}>Full name</label>
+              <label style={labelStyle}>
+                <span style={{ marginRight: 6 }}>📛</span>
+                Full name
+              </label>
               <input
                 type="text"
                 value={profile.full_name ?? ''}
@@ -477,7 +493,10 @@ const ProfilePage: React.FC = () => {
               }}
             >
               <div>
-                <label style={labelStyle}>Age</label>
+                <label style={labelStyle}>
+                  <span style={{ marginRight: 6 }}>🎂</span>
+                  Age
+                </label>
                 <input
                   type="number"
                   value={profile.age ?? ''}
@@ -494,7 +513,10 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label style={labelStyle}>Height (cm)</label>
+                <label style={labelStyle}>
+                  <span style={{ marginRight: 6 }}>📏</span>
+                  Height (cm)
+                </label>
                 <input
                   type="number"
                   value={profile.height_cm ?? ''}
@@ -511,7 +533,10 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label style={labelStyle}>Weight (kg)</label>
+                <label style={labelStyle}>
+                  <span style={{ marginRight: 6 }}>⚖️</span>
+                  Weight (kg)
+                </label>
                 <input
                   type="number"
                   step="0.1"
@@ -531,7 +556,10 @@ const ProfilePage: React.FC = () => {
 
             {/* Activity level */}
             <div style={{ marginBottom: 18 }}>
-              <label style={labelStyle}>Activity level</label>
+              <label style={labelStyle}>
+                <span style={{ marginRight: 6 }}>🏃</span>
+                Activity level
+              </label>
               <select
                 value={profile.activity_level ?? ''}
                 onChange={(e) =>
@@ -561,7 +589,10 @@ const ProfilePage: React.FC = () => {
 
             {/* Step goal */}
             <div style={{ marginBottom: 18 }}>
-              <label style={labelStyle}>Daily step goal</label>
+              <label style={labelStyle}>
+                <span style={{ marginRight: 6 }}>👣</span>
+                Daily step goal
+              </label>
               <input
                 type="number"
                 value={profile.step_goal_per_day}
@@ -595,7 +626,10 @@ const ProfilePage: React.FC = () => {
             />
 
             <div style={{ marginBottom: 12 }}>
-              <SectionTitle>Emergency contact</SectionTitle>
+              <SectionTitle>
+                <span style={{ marginRight: 8 }}>🆘</span>
+                Emergency contact
+              </SectionTitle>
               <SectionSub>
                 This contact is used by the fall detection demo to place
                 automated calls.
@@ -603,7 +637,10 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>Emergency contact name</label>
+              <label style={labelStyle}>
+                <span style={{ marginRight: 6 }}>📞</span>
+                Emergency contact name
+              </label>
               <input
                 type="text"
                 value={profile.emergency_contact_name ?? ''}
@@ -619,7 +656,10 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div style={{ marginBottom: 22 }}>
-              <label style={labelStyle}>Emergency contact phone</label>
+              <label style={labelStyle}>
+                <span style={{ marginRight: 6 }}>📱</span>
+                Emergency contact phone
+              </label>
               <input
                 type="tel"
                 value={profile.emergency_contact_phone ?? ''}
@@ -670,9 +710,22 @@ const ProfilePage: React.FC = () => {
                   opacity: saving ? 0.7 : 1,
                   transition: 'opacity .2s, transform .1s, box-shadow .2s',
                   boxShadow: '0 2px 8px rgba(31,95,99,0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
                 }}
               >
-                {saving ? 'Saving…' : 'Save changes'}
+                {saving ? (
+                  <>
+                    <span style={{ fontSize: 16 }}>⏳</span>
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: 16 }}>💾</span>
+                    Save changes
+                  </>
+                )}
               </button>
             </div>
           </form>
