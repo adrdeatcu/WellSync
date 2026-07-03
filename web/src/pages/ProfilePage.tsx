@@ -358,15 +358,20 @@ const ProfilePage: React.FC = () => {
           Dashboard
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Centered logo */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
           <img
             src={logo}
             alt="WellSync"
             style={{ height: 32, width: 'auto', background: 'transparent' }}
             draggable={false}
           />
-          <div style={{ lineHeight: 1.25 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+        </div>
+
+        {/* Profile info on the right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ lineHeight: 1.25, textAlign: 'right' }}>
+            <div style={{ fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
               <span style={{ fontSize: 18 }}>👤</span>
               Profile
             </div>
@@ -375,8 +380,6 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        <div style={{ width: 100 }} />
       </header>
 
       {/* Content */}
@@ -424,7 +427,7 @@ const ProfilePage: React.FC = () => {
             No profile data available.
           </div>
         ) : (
-          <form onSubmit={handleSubmit} style={{ ...cardBase, padding: 28 }}>
+          <form onSubmit={handleSubmit} style={{ ...cardBase, padding: '32px 36px' }}>
             {/* Title */}
             <div style={{ marginBottom: 20 }}>
               <SectionTitle>
