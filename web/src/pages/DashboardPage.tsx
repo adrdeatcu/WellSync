@@ -1063,11 +1063,10 @@ const DashboardPage: React.FC = () => {
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
               boxShadow: '-10px 0 40px rgba(31,95,99,0.2)',
-              padding: 24,
+              padding: '20px 24px',
               display: 'flex',
               flexDirection: 'column',
               borderLeft: `1px solid ${BRAND.border}`,
-              overflowY: 'auto',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1076,7 +1075,7 @@ const DashboardPage: React.FC = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: 18,
+                marginBottom: 14,
                 flexShrink: 0,
               }}
             >
@@ -1115,7 +1114,7 @@ const DashboardPage: React.FC = () => {
                 display: 'flex',
                 gap: 6,
                 padding: 4,
-                marginBottom: 16,
+                marginBottom: 12,
                 background: '#eef5f3',
                 borderRadius: 999,
                 flexShrink: 0,
@@ -1159,7 +1158,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Friends section now uses FriendsPanel */}
-            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            <div style={{ flex: 1, minHeight: 0 }}>
               <FriendsPanel
                 BRAND={{
                   border: BRAND.border,
@@ -1192,7 +1191,7 @@ const DashboardPage: React.FC = () => {
               type="button"
               onClick={handleLogout}
               style={{
-                marginTop: 20,
+                marginTop: 12,
                 height: 44,
                 borderRadius: 12,
                 border: 'none',
