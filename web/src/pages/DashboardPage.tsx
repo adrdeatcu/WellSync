@@ -550,34 +550,27 @@ const DashboardPage: React.FC = () => {
             position: 'absolute',
             left: '50%',
             transform: 'translateX(-50%)',
-            fontSize: 13,
+            fontSize: 16,
             fontStyle: 'italic',
-            letterSpacing: '0.04em',
+            letterSpacing: '0.06em',
             color: BRAND.muted,
             whiteSpace: 'nowrap',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            animation: 'pulseText 3s ease-in-out infinite',
+            animation: 'pulseText 2s ease-in-out infinite',
+            textShadow: '0 0 20px rgba(124, 194, 181, 0.3)',
           }}
         >
           <span
             style={{
-              display: 'inline-block',
-              fontSize: 14,
-              animation: 'rotateSync 4s linear infinite',
-            }}
-          >
-            🔄
-          </span>
-          <span
-            style={{
-              background: 'linear-gradient(90deg, #5d7b79, #7cc2b5, #5d7b79)',
+              background: 'linear-gradient(90deg, #1f5f63, #7cc2b5, #1f5f63)',
               backgroundSize: '200% 100%',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              animation: 'gradientShift 4s ease-in-out infinite',
+              animation: 'gradientShift 2.5s ease-in-out infinite',
+              fontWeight: 600,
             }}
           >
             Your health in sync

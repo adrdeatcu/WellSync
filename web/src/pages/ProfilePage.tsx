@@ -744,12 +744,8 @@ const ProfilePage: React.FC = () => {
           100% { transform: translateX(100%); }
         }
         @keyframes pulseText {
-          0%, 100% { opacity: 0.8; }
-          50% { opacity: 1; }
-        }
-        @keyframes rotateSync {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0%, 100% { opacity: 0.7; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.03); }
         }
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
