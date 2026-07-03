@@ -1067,6 +1067,7 @@ const DashboardPage: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               borderLeft: `1px solid ${BRAND.border}`,
+              overflowY: 'auto',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1076,6 +1077,7 @@ const DashboardPage: React.FC = () => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: 18,
+                flexShrink: 0,
               }}
             >
               <h3
@@ -1116,6 +1118,7 @@ const DashboardPage: React.FC = () => {
                 marginBottom: 16,
                 background: '#eef5f3',
                 borderRadius: 999,
+                flexShrink: 0,
               }}
             >
               {(['profile'] as PanelSection[]).map((sec) => {
@@ -1156,32 +1159,34 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Friends section now uses FriendsPanel */}
-            <FriendsPanel
-              BRAND={{
-                border: BRAND.border,
-                text: BRAND.text,
-                muted: BRAND.muted,
-                brandGradient: BRAND.brandGradient,
-              }}
-              friendsData={friendsData}
-              friendsLoading={friendsLoading}
-              friendsError={friendsError}
-              friendsListOpen={friendsListOpen}
-              setFriendsListOpen={setFriendsListOpen}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              searchResults={searchResults}
-              searchLoading={searchLoading}
-              searchError={searchError}
-              onSearchSubmit={handleSearchFriends}
-              onSendFriendRequest={handleSendFriendRequest}
-              onAcceptFriend={handleAcceptFriend}
-              // NEW props for activity invitations
-              activityInvites={activityInvites}
-              activityInvitesLoading={activityInvitesLoading}
-              activityInvitesError={activityInvitesError}
-              onRespondInvitation={handleRespondInvitation}
-            />
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+              <FriendsPanel
+                BRAND={{
+                  border: BRAND.border,
+                  text: BRAND.text,
+                  muted: BRAND.muted,
+                  brandGradient: BRAND.brandGradient,
+                }}
+                friendsData={friendsData}
+                friendsLoading={friendsLoading}
+                friendsError={friendsError}
+                friendsListOpen={friendsListOpen}
+                setFriendsListOpen={setFriendsListOpen}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                searchResults={searchResults}
+                searchLoading={searchLoading}
+                searchError={searchError}
+                onSearchSubmit={handleSearchFriends}
+                onSendFriendRequest={handleSendFriendRequest}
+                onAcceptFriend={handleAcceptFriend}
+                // NEW props for activity invitations
+                activityInvites={activityInvites}
+                activityInvitesLoading={activityInvitesLoading}
+                activityInvitesError={activityInvitesError}
+                onRespondInvitation={handleRespondInvitation}
+              />
+            </div>
 
             <button
               type="button"
@@ -1198,6 +1203,7 @@ const DashboardPage: React.FC = () => {
                 cursor: 'pointer',
                 boxShadow: BRAND.softShadow,
                 transition: 'transform 0.15s ease, opacity 0.15s ease',
+                flexShrink: 0,
               }}
               onMouseDown={(e) =>
                 (e.currentTarget.style.transform = 'scale(0.99)')
