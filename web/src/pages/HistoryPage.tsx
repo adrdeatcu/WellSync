@@ -41,6 +41,8 @@ const BRAND = {
   cardShadow: '0 20px 50px -20px rgba(31,95,99,0.35)',
   textMuted: '#5b7c79',
   divider: 'rgba(31,95,99,0.08)',
+  brandGradient: 'linear-gradient(135deg, #1f5f63 0%, #7cc2b5 100%)',
+  softShadow: '0 4px 20px -4px rgba(31, 95, 99, 0.15)',
 };
 
 const HistoryPage: React.FC = () => {
@@ -177,12 +179,41 @@ const HistoryPage: React.FC = () => {
             color: BRAND.deep,
             fontWeight: 600,
             fontSize: 13,
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = BRAND.brandGradient;
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.borderColor = 'transparent';
+            e.currentTarget.style.boxShadow = BRAND.softShadow;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.6)';
+            e.currentTarget.style.color = BRAND.deep;
+            e.currentTarget.style.borderColor = 'rgba(31,95,99,0.15)';
+            e.currentTarget.style.boxShadow = 'none';
           }}
         >
           ← Dashboard
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 110 }} />
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            cursor: 'default',
+            transition: 'transform 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
           <img
             src={logo}
             alt="WellSync"
@@ -190,16 +221,33 @@ const HistoryPage: React.FC = () => {
             draggable={false}
           />
           <div style={{ lineHeight: 1.1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: BRAND.deep }}>
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: BRAND.deep,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <span style={{ fontSize: 18 }}>📜</span>
               History
             </div>
-            <div style={{ fontSize: 11, color: BRAND.textMuted }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: BRAND.textMuted,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              <span>🔄</span>
               Your health in sync
             </div>
           </div>
         </div>
-
-        <div style={{ width: 110 }} />
       </header>
 
       {/* Range pills */}
