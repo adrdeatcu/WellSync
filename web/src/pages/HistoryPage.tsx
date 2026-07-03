@@ -168,86 +168,35 @@ const HistoryPage: React.FC = () => {
           type="button"
           onClick={handleBack}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            border: '1px solid rgba(31,95,99,0.15)',
-            background: 'rgba(255,255,255,0.6)',
-            padding: '8px 14px',
+            border: 'none',
+            background: '#eaf2f0',
+            padding: '8px 16px',
             borderRadius: 999,
             cursor: 'pointer',
-            color: BRAND.deep,
-            fontWeight: 600,
             fontSize: 13,
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = BRAND.brandGradient;
-            e.currentTarget.style.color = '#ffffff';
-            e.currentTarget.style.borderColor = 'transparent';
-            e.currentTarget.style.boxShadow = BRAND.softShadow;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.6)';
-            e.currentTarget.style.color = BRAND.deep;
-            e.currentTarget.style.borderColor = 'rgba(31,95,99,0.15)';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
-        >
-          ← Dashboard
-        </button>
-
-        <div style={{ width: 110 }} />
-
-        <div
-          style={{
+            fontWeight: 600,
+            color: BRAND.deep,
+            transition: 'transform .1s, background .2s, box-shadow .2s',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
-            cursor: 'default',
-            transition: 'transform 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.02)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
+            gap: 6,
           }}
         >
+          <span style={{ fontSize: 16 }}>🏠</span>
+          Dashboard
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
           <img
             src={logo}
             alt="WellSync"
-            style={{ height: 36, width: 'auto', background: 'transparent' }}
+            style={{ height: 32, width: 'auto', background: 'transparent' }}
             draggable={false}
           />
-          <div style={{ lineHeight: 1.1 }}>
-            <div
-              style={{
-                fontSize: 16,
-                fontWeight: 700,
-                color: BRAND.deep,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <span style={{ fontSize: 18 }}>📜</span>
-              History
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: BRAND.textMuted,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-            >
-              <span>🔄</span>
-              Your health in sync
-            </div>
-          </div>
         </div>
+
+        <div style={{ width: 80 }} />
       </header>
 
       {/* Range pills */}
