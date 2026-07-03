@@ -555,9 +555,33 @@ const DashboardPage: React.FC = () => {
             letterSpacing: '0.04em',
             color: BRAND.muted,
             whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            animation: 'pulseText 3s ease-in-out infinite',
           }}
         >
-          Your health in sync
+          <span
+            style={{
+              display: 'inline-block',
+              fontSize: 14,
+              animation: 'rotateSync 4s linear infinite',
+            }}
+          >
+            🔄
+          </span>
+          <span
+            style={{
+              background: 'linear-gradient(90deg, #5d7b79, #7cc2b5, #5d7b79)',
+              backgroundSize: '200% 100%',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              animation: 'gradientShift 4s ease-in-out infinite',
+            }}
+          >
+            Your health in sync
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
