@@ -507,12 +507,14 @@ const DashboardPage: React.FC = () => {
 
         <div
           style={{
-            flex: 1,
-            textAlign: 'center',
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
             fontSize: 13,
             fontStyle: 'italic',
             letterSpacing: '0.04em',
             color: BRAND.muted,
+            whiteSpace: 'nowrap',
           }}
         >
           Your health in sync
@@ -524,7 +526,7 @@ const DashboardPage: React.FC = () => {
             type="button"
             onClick={() => navigate('/history')}
             style={{
-              padding: '6px 12px',
+              padding: '8px 16px',
               borderRadius: 999,
               border: `1px solid ${BRAND.border}`,
               background: '#ffffff',
@@ -532,8 +534,26 @@ const DashboardPage: React.FC = () => {
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.2s ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = BRAND.brandGradient;
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.borderColor = 'transparent';
+              e.currentTarget.style.boxShadow = BRAND.softShadow;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.color = BRAND.text;
+              e.currentTarget.style.borderColor = BRAND.border;
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
             }}
           >
+            <span style={{ fontSize: 16 }}>📜</span>
             History
           </button>
           {/* Community nav button */}
@@ -541,7 +561,7 @@ const DashboardPage: React.FC = () => {
             type="button"
             onClick={() => navigate('/community')}
             style={{
-              padding: '6px 12px',
+              padding: '8px 16px',
               borderRadius: 999,
               border: `1px solid ${BRAND.border}`,
               background: '#ffffff',
@@ -549,12 +569,28 @@ const DashboardPage: React.FC = () => {
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.2s ease',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = BRAND.brandGradient;
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.borderColor = 'transparent';
+              e.currentTarget.style.boxShadow = BRAND.softShadow;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#ffffff';
+              e.currentTarget.style.color = BRAND.text;
+              e.currentTarget.style.borderColor = BRAND.border;
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
             }}
           >
+            <span style={{ fontSize: 16 }}>🌍</span>
             Community
           </button>
-
-          <span style={{ fontSize: 12, color: '#94a8a5' }}>{status}</span>
 
           <button
             type="button"
