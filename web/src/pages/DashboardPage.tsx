@@ -433,6 +433,46 @@ const DashboardPage: React.FC = () => {
 
   const stats = todayStats?.stats;
 
+  // Time-based greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  // Refresh stats
+  const [refreshing, setRefreshing] = useState(false);
+  async function handleRefreshStats() {
+    setRefreshing(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const statsRes = await fetch(`${backendUrl}/api/stats/today`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (statsRes.ok) {
+        const statsJson: TodayStatsResponse = await statsRes.json();
+        setTodayStats(statsJson);
+      }
+
+      const goalsRes = await fetch(`${backendUrl}/api/goals`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (goalsRes.ok) {
+        const goalsJson: GoalsResponse = await goalsRes.json();
+        setGoals(goalsJson);
+      }
+    } catch (err) {
+      console.error('Error refreshing stats:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
     <div
       style={{
@@ -666,19 +706,54 @@ const DashboardPage: React.FC = () => {
             backdropFilter: 'blur(14px)',
             WebkitBackdropFilter: 'blur(14px)',
             boxShadow: BRAND.cardShadow,
+            transition: 'box-shadow 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 24px 70px -20px rgba(31, 95, 99, 0.45)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = BRAND.cardShadow;
           }}
         >
-          <h2
-            style={{
-              margin: 0,
-              fontSize: 26,
-              fontWeight: 600,
-              letterSpacing: '-0.01em',
-              color: BRAND.text,
-            }}
-          >
-            Welcome back
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 26,
+                fontWeight: 600,
+                letterSpacing: '-0.01em',
+                color: BRAND.text,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 28 }}>👋</span>
+              {getGreeting()}
+            </h2>
+            <button
+              type="button"
+              onClick={handleRefreshStats}
+              disabled={refreshing}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                cursor: refreshing ? 'default' : 'pointer',
+                fontSize: 20,
+                color: BRAND.muted,
+                transition: 'transform 0.3s ease',
+                animation: refreshing ? 'spin 1s linear infinite' : 'none',
+                padding: 4,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Refresh stats"
+            >
+              🔄
+            </button>
+          </div>
           <p style={{ margin: '6px 0 24px', color: BRAND.muted, fontSize: 14 }}>
             Steps progress for today
           </p>
@@ -693,6 +768,13 @@ const DashboardPage: React.FC = () => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
+                transition: 'transform 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
               }}
             >
               {steps.toLocaleString()}
@@ -703,7 +785,7 @@ const DashboardPage: React.FC = () => {
             of {stepGoal.toLocaleString()} goal
           </p>
 
-          {/* Progress bar */}
+          {/* Progress bar with hover tooltip */}
           <div
             style={{
               marginTop: 18,
@@ -713,7 +795,10 @@ const DashboardPage: React.FC = () => {
               background: '#eaf2f0',
               overflow: 'hidden',
               boxShadow: 'inset 0 1px 3px rgba(31,95,99,0.08)',
+              position: 'relative',
+              cursor: 'pointer',
             }}
+            title={`${(progress * 100).toFixed(1)}% complete`}
           >
             <div
               style={{
@@ -722,8 +807,22 @@ const DashboardPage: React.FC = () => {
                 borderRadius: 999,
                 background: BRAND.brandGradient,
                 transition: 'width 0.5s ease',
+                position: 'relative',
               }}
-            />
+            >
+              {/* Shimmer effect */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                  animation: 'shimmer 2s infinite',
+                }}
+              />
+            </div>
           </div>
 
           <p style={{ marginTop: 14, color: '#4a6e6c', fontSize: 14 }}>
@@ -779,6 +878,15 @@ const DashboardPage: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: 10,
+              transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = BRAND.accent;
+              e.currentTarget.style.boxShadow = '0 4px 20px -4px rgba(31, 95, 99, 0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = BRAND.border;
+              e.currentTarget.style.boxShadow = BRAND.softShadow;
             }}
           >
             <div
@@ -795,8 +903,12 @@ const DashboardPage: React.FC = () => {
                     fontSize: 14,
                     fontWeight: 600,
                     color: BRAND.text,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
+                  <span style={{ fontSize: 18 }}>🤖</span>
                   AI coach
                 </div>
                 <div style={{ fontSize: 12, color: BRAND.muted }}>
@@ -820,9 +932,23 @@ const DashboardPage: React.FC = () => {
                   cursor: coachLoading ? 'default' : 'pointer',
                   boxShadow: BRAND.softShadow,
                   opacity: coachLoading ? 0.7 : 1,
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
                 }}
               >
-                {coachLoading ? 'Thinking…' : 'Ask coach'}
+                {coachLoading ? (
+                  <>
+                    <span style={{ fontSize: 14 }}>⏳</span>
+                    Thinking…
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: 14 }}>💬</span>
+                    Ask coach
+                  </>
+                )}
               </button>
             </div>
 
@@ -841,6 +967,15 @@ const DashboardPage: React.FC = () => {
                 resize: 'vertical',
                 fontFamily: 'inherit',
                 color: BRAND.text,
+                transition: 'border-color 0.2s ease',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = BRAND.accent;
+                e.currentTarget.style.boxShadow = `0 0 0 2px ${BRAND.accent}33`;
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = BRAND.border;
+                e.currentTarget.style.boxShadow = 'none';
               }}
             />
 

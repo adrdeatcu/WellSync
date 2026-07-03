@@ -739,6 +739,10 @@ const ProfilePage: React.FC = () => {
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
       `}</style>
     </div>
   );
