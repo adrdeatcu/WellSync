@@ -976,6 +976,7 @@ const DashboardPage: React.FC = () => {
               style={{
                 marginTop: 6,
                 width: '100%',
+                boxSizing: 'border-box',
                 minHeight: 60,
                 borderRadius: 12,
                 border: `1px solid ${BRAND.border}`,
