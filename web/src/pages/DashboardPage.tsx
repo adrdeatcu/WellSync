@@ -708,21 +708,25 @@ const DashboardPage: React.FC = () => {
                 label="Avg Heart Rate"
                 value={stats.avg_heart_rate_bpm ?? '—'}
                 unit="bpm"
+                emoji="❤️"
               />
               <StatTile
                 label="Air Quality"
                 value={stats.avg_air_quality_index ?? '—'}
                 unit="AQI"
+                emoji="🌬️"
               />
               <StatTile
                 label="Temperature"
                 value={stats.avg_temperature_c ?? '—'}
                 unit="°C"
+                emoji="🌡️"
               />
               <StatTile
                 label="Humidity"
                 value={stats.avg_humidity_percent ?? '—'}
                 unit="%"
+                emoji="💧"
               />
             </div>
           )}
@@ -1033,7 +1037,8 @@ const StatTile: React.FC<{
   label: string;
   value: number | string;
   unit: string;
-}> = ({ label, value, unit }) => (
+  emoji?: string;
+}> = ({ label, value, unit, emoji }) => (
   <div
     style={{
       padding: '14px 16px',
@@ -1044,6 +1049,7 @@ const StatTile: React.FC<{
     }}
   >
     <div style={{ fontSize: 12, color: '#7d9492', marginBottom: 4 }}>
+      {emoji && <span style={{ marginRight: 4 }}>{emoji}</span>}
       {label}
     </div>
     <div style={{ fontSize: 18, fontWeight: 600, color: '#1f3b3a' }}>
