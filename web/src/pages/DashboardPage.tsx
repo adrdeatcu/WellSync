@@ -1158,7 +1158,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Friends section now uses FriendsPanel */}
-            <div style={{ flex: 1, minHeight: 0, marginBottom: 8 }}>
+            <div style={{ flex: 1, minHeight: 0, marginBottom: 4 }}>
               <FriendsPanel
                 BRAND={{
                   border: BRAND.border,
@@ -1191,7 +1191,7 @@ const DashboardPage: React.FC = () => {
               type="button"
               onClick={handleLogout}
               style={{
-                marginTop: 0,
+                marginTop: -4,
                 height: 44,
                 borderRadius: 12,
                 border: 'none',
